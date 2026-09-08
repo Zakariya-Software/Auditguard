@@ -1,1 +1,17 @@
 
+{
+  "name": "AuditGuard AI Auditor",
+  "short_name": "AuditGuard",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b0e11",
+  "theme_color": "#38bdf8",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/581/581125.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
