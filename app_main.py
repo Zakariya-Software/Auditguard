@@ -84,21 +84,22 @@ async def index():
     </body>
     </html>
     """
+# Track upgraded IPs in memory for this session
+PAID_USERS = set()
 
 @app.post("/audit")
 async def audit(request: ContractRequest, req: Request):
-    # This logic matches your screenshot
     client_ip = req.client.host
-    today = date.today()
     
-    # In a real app, 'db' would be used here to count database entries
-    # For now, we use the placeholder analyzer function
+    if client_ip in PAID_USERS:
+        return analyze_contract_liability(request.contract_text)
+        
     return analyze_contract_liability(request.contract_text)
-# Track upgraded IPs in memory for this session
-PAID_USERS = set()
 
 @app.post("/upgrade")
 def upgrade_account(req: Request):
     client_ip = req.client.host
     PAID_USERS.add(client_ip)
     return {"status": "success", "message": "Successfully upgraded to Pro! Daily limit removed."}
+
+
