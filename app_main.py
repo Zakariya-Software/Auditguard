@@ -60,34 +60,27 @@ def read_root():
         </script>
     </body>
     </html>
-    """
-@app.post("/audit")
-def audit_contract(request: ContractRequest, req: Request, db: Session = Depends(get_db)):
-    client_ip = req.client.host
-    today = date.today()
-    
-    daily_count = db.query(AuditLog).filter(
-        AuditLog.ip_address == client_ip,
-        AuditLog.created_at >= datetime.combine(today, datetime.min.time())
-    ).count()
-    
-    if daily_count >= 3:
-        return {"error": "Daily limit reached (3/3 free audits used). Please upgrade!"}
-        
-    return analyze_contract_liability(request.contract_text)
-
-
-
-    
-    
-
-
-def get_db():
+   def get_db():
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
+
+@app.post("/audit")
+def audit_contract(request: ContractRequest, req: Request, db: Session = Depends(get_db)):
+    client_ip = req.client.host
+    today = date.today()
+
+    daily_count = db.query(AuditLog).filter(
+        AuditLog.ip_address == client_ip,
+        AuditLog.created_at >= datetime.combine(today, datetime.min.time())
+    ).count()
+
+    if daily_count >= 3:
+        return {"error": "Daily limit reached (3/3 free audits used). Please upgrade!"}
+
+    return analyze_contract_liability(request.contract_text)
 
 @app.get("/history")
 def get_audit_history(db: Session = Depends(get_db)):
