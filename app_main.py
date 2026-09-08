@@ -94,3 +94,11 @@ async def audit(request: ContractRequest, req: Request):
     # In a real app, 'db' would be used here to count database entries
     # For now, we use the placeholder analyzer function
     return analyze_contract_liability(request.contract_text)
+# Track upgraded IPs in memory for this session
+PAID_USERS = set()
+
+@app.post("/upgrade")
+def upgrade_account(req: Request):
+    client_ip = req.client.host
+    PAID_USERS.add(client_ip)
+    return {"status": "success", "message": "Successfully upgraded to Pro! Daily limit removed."}
