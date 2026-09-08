@@ -1,4 +1,7 @@
-annotated-doc==0.0.5
+fastapi
+uvicorn
+httpx
+pydanticannotated-doc==0.0.5
 anyio==4.15.1
 click==8.5.0
 fastapi==0.125.0
