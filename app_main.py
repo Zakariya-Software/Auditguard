@@ -74,7 +74,9 @@ async def index():
             <p>Paste your contract text below for an instant risk evaluation.</p>
             <textarea id="contractInput" placeholder="Paste contract text here..."></textarea>
             <button onclick="submitAudit()">Analyze Contract</button>
-            <button class="btn-pro" onclick="alert('Pro features coming soon! Includes AI-powered deep scanning.')">Upgrade to Pro</button>
+            <button class="btn-pro" onclick="alert('Pro features coming soon! Includes AI-powered deep scanning.')">Upgrade to Pro</button><button onclick="submitAudit()">Analyze Contract</button>
+<button onclick="upgradeAccount()" style="background: #22c55e; margin-top: 8px;">Upgrade to Pro</button>
+
             <div id="result"></div>
         </div>
 
@@ -97,14 +99,39 @@ async def index():
                     resultDiv.textContent = JSON.stringify(data, null, 2);
                     resultDiv.style.borderLeftColor = data.risk_score === 'CRITICAL' ? '#ef4444' : '#38bdf8';
                 } catch (err) {
-                    resultDiv.textContent = 'Error: ' + err.message;
-                }
-            }
-        </script>
-    </body>
-    </html>
-    """
+                    resultDiv.textContent = 'Error: ' + err.message;        } catch (err) {
+            resultDiv.textContent = 'Error: ' + err.message;
+        }
+    }
+
+    async function upgradeAccount() {
+    # Track usage and upgraded users in memory
+PAID_USERS = set()
+USAGE_COUNTS = {}
 
 @app.post("/audit")
-async def audit(request: ContractRequest):
+async def audit(request: ContractRequest, req: Request):
+    client_ip = req.client.host
+    today_str = str(date.today())
+    
+    # Paid users bypass the daily limit
+    if client_ip in PAID_USERS:
+        return analyze_contract_liability(request.contract_text)
+        
+    # Check free user daily limit (max 3 audits)
+    key = f"{client_ip}_{today_str}"
+    current_count = USAGE_COUNTS.get(key, 0)
+    
+    if current_count >= 3:
+        return {"error": "Daily limit reached (3/3 free audits used). Please upgrade!"}
+        
+    # Increment count and allow audit
+    USAGE_COUNTS[key] = current_count + 1
     return analyze_contract_liability(request.contract_text)
+
+@app.post("/upgrade")
+def upgrade_account(req: Request):
+    client_ip = req.client.host
+    PAID_USERS.add(client_ip)
+    return {"status": "success", "message": "Successfully upgraded to Pro! Daily limit removed."}
+
