@@ -1,16 +1,4 @@
 fastapi
 uvicorn
 httpx
-pydanticannotated-doc==0.0.5
-anyio==4.15.1
-click==8.5.0
-fastapi==0.125.0
-greenlet==3.5.5
-h11==0.16.0
-idna==3.19
-pydantic==1.10.26
-SQLAlchemy==2.0.52
-starlette==0.50.0
-typing_extensions==4.16.0
-uvicorn==0.52.4
-requests
+pydantic
