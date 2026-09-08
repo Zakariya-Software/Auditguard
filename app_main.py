@@ -137,17 +137,43 @@ async def audit(request: ContractRequest, req: Request):
     return analyze_contract_liability(request.contract_text)
 
 @app.post("/upgrade")
-async def upgrade_account(req: Request):
-    """
-    Simulates an upgrade. In a real app, this would follow a 
-    successful payment confirmation.
-    """
+def upgrade_account(req: Request):
+  url = "https://api.paystack.co/transaction/initialize"
+  headers = {
+      "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
+      "Content-Type": "application/json",
+  }
+  payload = {
+      "email": "user@example.com",
+      "amount": 50000,  # 500 KES in cents
+      "callback_url": "https://web-production-b74c4.up.railway.app/verify-payment",
+  }
+
+  response = requests.post(url, json=payload, headers=headers)
+  if response.status_code != 200:
+    raise HTTPException(
+        status_code=400, detail="Could not initialize Paystack transaction"
+    )
+
+  data = response.json()
+  return {"authorization_url": data["data"]["authorization_url"]}
+@app.get("/verify-payment")
+def verify_payment(reference: str, req: Request):
+  url = f"https://api.paystack.co/transaction/verify/{reference}"
+  headers = {"Authorization": f"Bearer {PAYSTACK_SECRET_KEY}"}
+
+  response = requests.get(url, headers=headers)
+  if response.status_code != 200:
+    raise HTTPException(status_code=400, detail="Payment verification failed")
+
+  data = response.json()
+  if data["data"]["status"] == "success":
     client_ip = req.client.host
     PAID_USERS.add(client_ip)
-    return {
-        "status": "success", 
-        "message": "Successfully upgraded to Pro! Your daily limit has been removed."
-    }
+    return RedirectResponse(url="/?success=true", status_code=303)
+
+  return RedirectResponse(url="/?success=false", status_code=303)
+
 
 # To run this:
 # 1. Install fastapi and uvicorn: pip install fastapi uvicorn
