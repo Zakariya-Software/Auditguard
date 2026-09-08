@@ -55,7 +55,8 @@ async def index():
             <h1>AuditGuard</h1>
             <p>Paste your contract text below for an instant risk evaluation.</p>
             <textarea id="contractInput" placeholder="Paste contract text here..."></textarea>
-            <button onclick="submitAudit()">Analyze Contract</button>
+            <button onclick="submitAudit()">Analyze Contract</button><button onclick="upgradeAccount()" style="background: #22c55e; margin-top: 8px;">Upgrade to Pro</button>
+
             <div id="result"></div>
         </div>
 
@@ -79,7 +80,21 @@ async def index():
                 } catch (err) {
                     resultDiv.textContent = 'Error: ' + err.message;
                 }
-            }
+       async function upgradeAccount() {
+    const resultDiv = document.getElementById('result');
+    resultDiv.style.display = 'block';
+    resultDiv.textContent = 'Upgrading account...';
+    try {
+        const response = await fetch('/upgrade', {
+            method: 'POST'
+        });
+        const data = await response.json();
+        resultDiv.textContent = JSON.stringify(data, null, 2);
+    } catch (err) {
+        resultDiv.textContent = 'Error: ' + err.message;
+    }
+}
+     }
         </script>
     </body>
     </html>
