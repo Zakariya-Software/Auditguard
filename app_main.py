@@ -5,8 +5,13 @@ from datetime import date
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse, FileResponse
 from pydantic import BaseModel
+from starlette.middleware.sessions import SessionMiddleware
+
 
 app = FastAPI()
+
+
+
 
 # --- CONFIGURATION (Managed in Railway Variables) ---
 PAYSTACK_SECRET_KEY = os.environ.get("PAYSTACK_SECRET_KEY", "")
@@ -128,21 +133,28 @@ async def get_sw():
 
 # --- BACKEND LOGIC ---
 @app.post("/audit")
-async def audit(request: ContractRequest, req: Request):
-    client_ip = req.client.host
-    today = str(date.today())
+async def audit_contract(request: Request, contract: ContractRequest):
+    # Get current trial count from session, default to 0
+    trials = request.session.get("trials", 0)
+
+    # If user has reached 3 trials, block and return Paystack redirect
+    if trials >= 3:
+        raise HTTPException(
+            status_code=403,
+            detail={"error": "Trial limit reached", "redirect": "https://checkout.paystack.com/your-link"}
+        )
+
+    # Increment trial count for this session
+    request.session["trials"] = trials + 1
     
-    if client_ip in PAID_USERS:
-        return analyze_contract_liability(request.contract_text)
-
-    key = f"{client_ip}_{today}"
-    count = USAGE_COUNTS.get(key, 0)
-
-    if count >= 3:
-        return {"error": "Daily limit reached (3/3 used). Upgrade to Pro for unlimited scans!"}
-
-    USAGE_COUNTS[key] = count + 1
-    return analyze_contract_liability(request.contract_text)
+    # Run the contract evaluation logic
+    analysis = analyze_contract_liability(contract.contract_text)
+    
+    return {
+        "success": True, 
+        "trials_used": request.session["trials"],
+        "analysis": analysis
+    }
 
 @app.post("/upgrade")
 async def upgrade(req: Request):
