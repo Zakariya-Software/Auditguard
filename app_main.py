@@ -1,22 +1,17 @@
 import os
 import httpx
 from datetime import date
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, Response, HTTPException
 from fastapi.responses import HTMLResponse, FileResponse
 from pydantic import BaseModel
-from starlette.middleware.sessions import SessionMiddleware
 
 app = FastAPI()
-
-# Register SessionMiddleware right below app initialization to prevent request.session crashes
-app.add_middleware(SessionMiddleware, secret_key="my_super_secret_random_key_12345")
 
 # --- CONFIGURATION ---
 PAYSTACK_SECRET_KEY = os.environ.get("PAYSTACK_SECRET_KEY", "")
 BASE_URL = os.environ.get("BASE_URL", "https://web-production-b74c4.up.railway.app")
 
 # --- IN-MEMORY STORAGE ---
-USAGE_COUNTS = {}
 PAID_USERS = set()
 
 class ContractRequest(BaseModel):
@@ -131,9 +126,18 @@ async def get_sw():
 
 # --- BACKEND LOGIC ---
 @app.post("/audit")
-async def audit_contract(request: Request, contract: ContractRequest):
-    # Get current trial count from session, default to 0
-    trials = request.session.get("trials", 0)
+async def audit_contract(request: Request, response: Response, contract: ContractRequest):
+    client_ip = request.client.host
+    if client_ip in PAID_USERS:
+        analysis = analyze_contract_liability(contract.contract_text)
+        return {"success": True, "trials_used": "unlimited", "analysis": analysis}
+
+    # Track trials using standard browser cookies to avoid external dependencies crashing Railway
+    trials_cookie = request.cookies.get("trials", "0")
+    try:
+        trials = int(trials_cookie)
+    except ValueError:
+        trials = 0
 
     # If user has reached 3 trials, block and return Paystack redirect
     if trials >= 3:
@@ -142,15 +146,16 @@ async def audit_contract(request: Request, contract: ContractRequest):
             detail={"error": "Trial limit reached", "redirect": "https://checkout.paystack.com/your-link"}
         )
 
-    # Increment trial count for this session
-    request.session["trials"] = trials + 1
+    # Increment trial count and save back to browser cookie
+    new_trials = trials + 1
+    response.set_cookie(key="trials", value=str(new_trials))
     
     # Run the contract evaluation logic
     analysis = analyze_contract_liability(contract.contract_text)
     
     return {
         "success": True, 
-        "trials_used": request.session["trials"],
+        "trials_used": new_trials,
         "analysis": analysis
     }
 
@@ -189,4 +194,3 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
-
