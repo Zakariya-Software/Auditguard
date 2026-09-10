@@ -1,3 +1,4 @@
+
 import os
 import httpx
 from datetime import date
@@ -5,12 +6,11 @@ from fastapi import FastAPI, Request, Response, HTTPException, Form
 from fastapi.responses import HTMLResponse, FileResponse
 from pydantic import BaseModel
 from starlette.middleware.sessions import SessionMiddleware
-from passlib.context import CryptContext
+import bcrypt
 
 app = FastAPI()
 
 app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET", "super-secret-key-change-this"))
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # CONFIGURATION
 PAYSTACK_SECRET_KEY = os.environ.get("PAYSTACK_SECRET_KEY", "")
@@ -172,8 +172,10 @@ async def get_sw():
 async def signup(request: Request, email: str = Form(...), password: str = Form(...)):
     if email in USERS_DB:
         raise HTTPException(status_code=400, detail="Email already registered")
+    
+    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     USERS_DB[email] = {
-        "password_hash": pwd_context.hash(password),
+        "password_hash": hashed_password,
         "is_paid": False
     }
     request.session["user"] = email
@@ -182,8 +184,13 @@ async def signup(request: Request, email: str = Form(...), password: str = Form(
 @app.post("/login")
 async def login(request: Request, email: str = Form(...), password: str = Form(...)):
     user = USERS_DB.get(email)
-    if not user or not pwd_context.verify(password, user["password_hash"]):
+    if not user:
         raise HTTPException(status_code=400, detail="Incorrect email or password")
+    
+    valid = bcrypt.checkpw(password.encode('utf-8'), user["password_hash"].encode('utf-8'))
+    if not valid:
+        raise HTTPException(status_code=400, detail="Incorrect email or password")
+        
     request.session["user"] = email
     return {"message": "Logged in successfully"}
 
