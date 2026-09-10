@@ -95,7 +95,7 @@ async def index():
             const data = await response.json();
 
             if (response.status === 403) {
-                resDiv.innerHTML = `<span style="color: #fb7185">${data.detail.error}</span><br><a href="${data.detail.redirect}" target="_blank" style="color: #38bdf8; font-weight: bold;">Click here to pay and unlock unlimited access</a>`;
+                resDiv.innerHTML = `<span style="color: #fb7185">${data.detail.error}</span><br><button class="btn-pro" onclick="upgradeAccount()" style="margin-top: 10px;">Pay 5,000 KES to Unlock Unlimited Access</button>`;
             } else if (data.error) {
                 resDiv.innerHTML = `<span style="color: #fb7185">${data.error}</span>`;
             } else {
@@ -108,7 +108,7 @@ async def index():
             const res = await fetch('/upgrade', { method: 'POST' });
             const data = await res.json();
             if (data.authorization_url) window.location.href = data.authorization_url;
-            else alert('Unable to start payment. Check your internet.');
+            else alert('Unable to start payment. Check your internet or Paystack keys.');
         }
     </script>
 </body>
@@ -132,18 +132,18 @@ async def audit_contract(request: Request, response: Response, contract: Contrac
         analysis = analyze_contract_liability(contract.contract_text)
         return {"success": True, "trials_used": "unlimited", "analysis": analysis}
 
-    # Track trials using standard browser cookies to avoid external dependencies crashing Railway
+    # Track trials using browser cookies
     trials_cookie = request.cookies.get("trials", "0")
     try:
         trials = int(trials_cookie)
     except ValueError:
         trials = 0
 
-    # If user has reached 3 trials, block and return Paystack redirect
+    # If user has reached 3 trials, block and return error message
     if trials >= 3:
         raise HTTPException(
             status_code=403,
-            detail={"error": "Trial limit reached", "redirect": "https://checkout.paystack.com/your-link"}
+            detail={"error": "Free trial limit reached (3/3). Upgrade to continue."}
         )
 
     # Increment trial count and save back to browser cookie
@@ -168,6 +168,7 @@ async def upgrade(req: Request):
             json={
                 "email": f"user_{client_ip.replace('.', '_')}@auditguard.com",
                 "amount": "500000", # 500,000 subunits = 5,000 KES
+                "currency": "KES",
                 "callback_url": f"{BASE_URL}/verify",
                 "metadata": {"ip": client_ip}
             },
