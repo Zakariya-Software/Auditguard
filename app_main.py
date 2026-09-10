@@ -1,12 +1,11 @@
-
 import os
 import httpx
+import hashlib
 from datetime import date
 from fastapi import FastAPI, Request, Response, HTTPException, Form
 from fastapi.responses import HTMLResponse, FileResponse
 from pydantic import BaseModel
 from starlette.middleware.sessions import SessionMiddleware
-import bcrypt
 
 app = FastAPI()
 
@@ -22,6 +21,20 @@ PAID_USERS = set()
 
 class ContractRequest(BaseModel):
     contract_text: str
+
+def hash_password(password: str) -> str:
+    salt = os.urandom(16)
+    pwd_hash = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100_000)
+    return salt.hex() + ":" + pwd_hash.hex()
+
+def verify_password(password: str, stored_hash: str) -> bool:
+    try:
+        salt_hex, pwd_hash_hex = stored_hash.split(":")
+        salt = bytes.fromhex(salt_hex)
+        pwd_hash = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100_000)
+        return pwd_hash.hex() == pwd_hash_hex
+    except Exception:
+        return False
 
 def analyze_contract_liability(text: str):
     text_lower = text.lower()
@@ -173,9 +186,8 @@ async def signup(request: Request, email: str = Form(...), password: str = Form(
     if email in USERS_DB:
         raise HTTPException(status_code=400, detail="Email already registered")
     
-    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     USERS_DB[email] = {
-        "password_hash": hashed_password,
+        "password_hash": hash_password(password),
         "is_paid": False
     }
     request.session["user"] = email
@@ -184,11 +196,7 @@ async def signup(request: Request, email: str = Form(...), password: str = Form(
 @app.post("/login")
 async def login(request: Request, email: str = Form(...), password: str = Form(...)):
     user = USERS_DB.get(email)
-    if not user:
-        raise HTTPException(status_code=400, detail="Incorrect email or password")
-    
-    valid = bcrypt.checkpw(password.encode('utf-8'), user["password_hash"].encode('utf-8'))
-    if not valid:
+    if not user or not verify_password(password, user["password_hash"]):
         raise HTTPException(status_code=400, detail="Incorrect email or password")
         
     request.session["user"] = email
