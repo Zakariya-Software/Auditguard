@@ -33,8 +33,8 @@ def init_db():
     
     # Safe check in case table already existed without trials_used
     cursor.execute("PRAGMA table_info(users)")
-    columns = [col[1] for col in cursor.fetchall()]
-    if "trials_used" not in columns:
+    user_columns = [col[1] for col in cursor.fetchall()]
+    if "trials_used" not in user_columns:
         cursor.execute("ALTER TABLE users ADD COLUMN trials_used INTEGER NOT NULL DEFAULT 0")
 
     cursor.execute('''
@@ -45,9 +45,17 @@ def init_db():
             snippet TEXT NOT NULL,
             full_text TEXT NOT NULL,
             risk TEXT NOT NULL,
-            details TEXT NOT NULL
+            details TEXT NOT NULL,
+            solutions TEXT NOT NULL DEFAULT ''
         )
     ''')
+    
+    # Safe check in case history table existed without solutions
+    cursor.execute("PRAGMA table_info(history)")
+    history_columns = [col[1] for col in cursor.fetchall()]
+    if "solutions" not in history_columns:
+        cursor.execute("ALTER TABLE history ADD COLUMN solutions TEXT NOT NULL DEFAULT ''")
+
     conn.commit()
     conn.close()
 
@@ -74,15 +82,25 @@ def analyze_contract_liability(text: str):
     text_lower = text.lower()
     risk_score = "LOW"
     details = "The AI found no immediate high-risk clauses. This contract appears standard."
+    solutions = "No specific remediation required. Standard terms look acceptable."
     
     risky_words = ["liable", "indemnify", "breach", "terminate", "penalty", "interest"]
     found = [word for word in risky_words if word in text_lower]
     
     if len(found) > 0:
         risk_score = "CRITICAL"
-        details = f"Warning: Potential high-risk clauses found regarding: {', '.join(found)}. Review these carefully."
+        details = f"Warning: Potential high-risk clauses found regarding: {', '.join(found)}."
+        solutions = (
+            "1. <strong>Termination Notice:</strong> Request a mandatory 14 to 30 days written notice period instead of immediate termination without notice.<br>"
+            "2. <strong>Liability Cap:</strong> Limit personal liability to direct damages or cap it at the total fees earned under the agreement.<br>"
+            "3. <strong>Penalties:</strong> Remove strict personal legal penalties for accidental equipment loss; propose standard wear-and-tear exceptions or company insurance coverage."
+        )
         
-    return {"risk_score": risk_score, "details": details}
+    return {
+        "risk_score": risk_score, 
+        "details": details,
+        "solutions": solutions
+    }
 
 @app.get("/", response_class=HTMLResponse)
 async def index():
@@ -316,7 +334,7 @@ async def index():
             textarea { 
                 width: 100%; 
                 flex: 1;
-                min-height: 280px; 
+                min-height: 240px; 
                 background: rgba(10, 11, 16, 0.9); 
                 color: #f8fafc; 
                 border: 1px solid rgba(255, 255, 255, 0.08); 
@@ -325,7 +343,7 @@ async def index():
                 font-size: 0.9rem; 
                 resize: none; 
                 outline: none; 
-                margin-bottom: 16px; 
+                margin-bottom: 14px; 
                 line-height: 1.5;
             }
             textarea:focus { 
@@ -378,6 +396,8 @@ async def index():
                 border-left: 4px solid #38bdf8; 
                 border: 1px solid rgba(59, 130, 246, 0.2);
                 line-height: 1.5;
+                max-height: 250px;
+                overflow-y: auto;
             }
         </style>
     </head>
@@ -427,13 +447,13 @@ async def index():
 
             <!-- Main Contract Analysis Workspace -->
             <div class="workspace">
-                <p class="instruction-text">Paste your contract text below for an instant risk evaluation.</p>
+                <p class="instruction-text">Paste your contract text below for an instant risk evaluation and solution guidance.</p>
                 <textarea id="contractInput" placeholder="Paste contract text here..."></textarea>
             </div>
 
             <!-- Footer Action Buttons -->
             <div class="footer-actions">
-                <button class="action-btn btn-analyze" onclick="submitAudit()">Analyze Contract</button>
+                <button class="action-btn btn-analyze" onclick="submitAudit()">Analyze Contract & Find Solutions</button>
                 <button class="action-btn btn-pro" onclick="upgradeAccount()">Upgrade to Pro (Remove Limits)</button>
             </div>
             
@@ -480,7 +500,7 @@ async def index():
                             document.getElementById('contractInput').value = item.full_text;
                             const resDiv = document.getElementById('result');
                             resDiv.style.display = 'block';
-                            resDiv.innerHTML = `<strong>Loaded from History:</strong><br><strong>Risk Score:</strong> ${item.risk}<br><strong>Details:</strong> ${item.details}`;
+                            resDiv.innerHTML = `<strong>Loaded from History:</strong><br><strong>Risk Score:</strong> <span style="color: ${item.risk === 'CRITICAL' ? '#f43f5e' : '#34d399'}">${item.risk}</span><br><strong>Details:</strong> ${item.details}<br><br><strong>Recommended Solution:</strong><br>${item.solutions}`;
                             toggleSidebar();
                         };
                         listEl.appendChild(div);
@@ -557,7 +577,7 @@ async def index():
                 const text = document.getElementById('contractInput').value;
                 const resDiv = document.getElementById('result');
                 resDiv.style.display = 'block';
-                resDiv.innerHTML = 'Analyzing contract...';
+                resDiv.innerHTML = 'Analyzing contract and generating solutions...';
 
                 try {
                     const res = await fetch('/audit', {
@@ -567,7 +587,7 @@ async def index():
                     });
                     const data = await res.json();
                     if (res.ok) {
-                        resDiv.innerHTML = `<strong>Status:</strong> Success<br><strong>Trials Used:</strong> ${data.trials_used}<br><br><strong>Risk Score:</strong> ${data.analysis.risk_score}<br><strong>Details:</strong> ${data.analysis.details}`;
+                        resDiv.innerHTML = `<strong>Status:</strong> Success | <strong>Trials Used:</strong> ${data.trials_used}<br><br><strong>Risk Score:</strong> <span style="color: ${data.analysis.risk_score === 'CRITICAL' ? '#f43f5e' : '#34d399'}">${data.analysis.risk_score}</span><br><strong>Details:</strong> ${data.analysis.details}<br><br><strong>Recommended Solution:</strong><br>${data.analysis.solutions}`;
                     } else {
                         resDiv.innerHTML = `<span style="color: #f43f5e;">${data.detail}</span><br><br><button class="action-btn btn-pro" onclick="upgradeAccount()">Upgrade to Pro (Remove Limits)</button>`;
                     }
@@ -635,11 +655,11 @@ async def get_history(request: Request):
         if row and row[0] == 1:
             is_paid = 1
             
-    cursor.execute("SELECT date, snippet, full_text, risk, details FROM history WHERE identifier = ? ORDER BY id ASC", (identifier,))
+    cursor.execute("SELECT date, snippet, full_text, risk, details, solutions FROM history WHERE identifier = ? ORDER BY id ASC", (identifier,))
     rows = cursor.fetchall()
     conn.close()
     
-    # If not paid, show only the first 3 free trials. If paid, show all history items (newest first or ordered).
+    # If not paid, show only the first 3 free trials. If paid, show all history items.
     if not is_paid:
         rows = rows[:3]
     else:
@@ -652,7 +672,8 @@ async def get_history(request: Request):
             "snippet": row[1],
             "full_text": row[2],
             "risk": row[3],
-            "details": row[4]
+            "details": row[4],
+            "solutions": row[5]
         })
     return {"history": history_list}
 
@@ -666,7 +687,6 @@ async def signup(request: Request, email: str = Form(...), password: str = Form(
         raise HTTPException(status_code=400, detail="Email already registered")
     
     pwd_hash = hash_password(password)
-    # Each new account gets its own independent trials_used starting at 0
     cursor.execute("INSERT INTO users (email, password_hash, is_paid, trials_used) VALUES (?, ?, 0, 0)", (email, pwd_hash))
     conn.commit()
     conn.close()
@@ -705,8 +725,8 @@ async def audit_contract(request: Request, response: Response, contract: Contrac
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO history (identifier, date, snippet, full_text, risk, details) VALUES (?, ?, ?, ?, ?, ?)",
-        (identifier, date_str, snippet, contract.contract_text, analysis["risk_score"], analysis["details"])
+        "INSERT INTO history (identifier, date, snippet, full_text, risk, details, solutions) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (identifier, date_str, snippet, contract.contract_text, analysis["risk_score"], analysis["details"], analysis["solutions"])
     )
     conn.commit()
 
