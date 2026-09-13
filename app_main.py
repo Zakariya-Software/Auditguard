@@ -58,60 +58,55 @@ async def index():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>AuditGuard AI - Instant Contract Risk Analysis</title>
+        <title>AuditGuard AI - Contract Risk Analysis</title>
         <link rel="manifest" href="/manifest.json">
-        <meta name="theme-color" content="#07090e">
+        <meta name="theme-color" content="#090a0f">
         <meta name="mobile-web-app-capable" content="yes">
         <style>
             * { box-sizing: border-box; }
             body { 
                 font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-                background: radial-gradient(circle at 50% 0%, #171f38 0%, #07090e 70%); 
+                background: radial-gradient(circle at 50% 0%, #1f1315 0%, #090a0f 70%); 
                 color: #f8fafc; 
                 display: flex; 
-                justify-content: center; 
-                align-items: center; 
+                flex-direction: column;
                 min-height: 100vh; 
                 margin: 0; 
                 padding: 16px; 
             }
-            .card { 
+            .app-container { 
                 width: 100%; 
-                max-width: 480px; 
-                background: rgba(15, 20, 35, 0.85); 
-                backdrop-filter: blur(12px);
-                padding: 28px; 
-                border-radius: 20px; 
-                border: 1px solid rgba(255, 255, 255, 0.08); 
-                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); 
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                background: rgba(15, 12, 14, 0.9); 
+                padding: 20px; 
+                border-radius: 16px; 
+                border: 1px solid rgba(239, 68, 68, 0.15); 
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8); 
             }
             .header-row { 
                 display: flex; 
                 justify-content: space-between; 
                 align-items: center; 
-                margin-bottom: 22px; 
-                border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-                padding-bottom: 14px;
-            }
-            .logo-container {
-                display: flex;
-                align-items: center;
-                gap: 8px;
+                margin-bottom: 16px; 
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+                padding-bottom: 12px;
             }
             h1 { 
-                font-size: 1.2rem; 
-                font-weight: 700; 
+                font-size: 1.3rem; 
+                font-weight: 800; 
                 margin: 0; 
-                background: linear-gradient(135deg, #ffffff 30%, #94a3b8 100%);
+                background: linear-gradient(135deg, #ffffff 30%, #fca5a5 100%);
                 -webkit-background-clip: text;
                 -webkit-text-fill-color: transparent;
                 letter-spacing: -0.02em;
             }
             .auth-toggle-btn { 
                 font-size: 0.75rem; 
-                color: #818cf8; 
-                background: rgba(129, 140, 248, 0.1); 
-                border: 1px solid rgba(129, 140, 248, 0.2); 
+                color: #fca5a5; 
+                background: rgba(239, 68, 68, 0.1); 
+                border: 1px solid rgba(239, 68, 68, 0.25); 
                 padding: 6px 12px;
                 border-radius: 20px;
                 cursor: pointer; 
@@ -119,36 +114,30 @@ async def index():
                 transition: all 0.2s ease;
             }
             .auth-toggle-btn:hover { 
-                background: rgba(129, 140, 248, 0.2); 
-                color: #a5b4fc;
+                background: rgba(239, 68, 68, 0.2); 
+                color: #ffffff;
             }
             .auth-box { 
                 display: none; 
-                background: rgba(19, 25, 41, 0.95); 
-                border: 1px solid rgba(129, 140, 248, 0.2); 
-                border-radius: 14px; 
-                padding: 16px; 
-                margin-bottom: 20px; 
-                animation: fadeIn 0.2s ease-in-out;
-            }
-            @keyframes fadeIn {
-                from { opacity: 0; transform: translateY(-6px); }
-                to { opacity: 1; transform: translateY(0); }
+                background: rgba(24, 16, 18, 0.95); 
+                border: 1px solid rgba(239, 68, 68, 0.3); 
+                border-radius: 12px; 
+                padding: 14px; 
+                margin-bottom: 16px; 
             }
             .auth-box input { 
                 width: 100%; 
-                padding: 11px 14px; 
-                background: #07090e; 
-                border: 1px solid #2a3759; 
-                border-radius: 10px; 
+                padding: 10px 12px; 
+                background: #090a0f; 
+                border: 1px solid #3f1d22; 
+                border-radius: 8px; 
                 color: #f8fafc; 
                 font-size: 0.85rem; 
                 margin-bottom: 10px; 
                 outline: none; 
-                transition: border-color 0.2s;
             }
             .auth-box input:focus {
-                border-color: #6366f1;
+                border-color: #ef4444;
             }
             .auth-row { 
                 display: flex; 
@@ -156,92 +145,98 @@ async def index():
             }
             .auth-row button { 
                 flex: 1; 
-                padding: 9px; 
-                border-radius: 9px; 
+                padding: 8px; 
+                border-radius: 8px; 
                 font-size: 0.75rem; 
                 font-weight: 600; 
                 cursor: pointer; 
                 border: none; 
-                transition: opacity 0.2s;
             }
-            .auth-row button:hover { opacity: 0.9; }
-            .btn-signup { background: #334155; color: white; }
-            .btn-login { background: #6366f1; color: white; }
-            #authStatus { font-size: 0.75rem; margin-top: 8px; text-align: center; font-weight: 500; }
+            .btn-signup { background: #332729; color: #cbd5e1; }
+            .btn-login { background: #ef4444; color: white; }
+            #authStatus { font-size: 0.75rem; margin-top: 6px; text-align: center; font-weight: 500; }
             .instruction-text { 
-                font-size: 0.825rem; 
+                font-size: 0.85rem; 
                 color: #94a3b8; 
-                margin-bottom: 10px; 
+                margin-bottom: 8px; 
                 font-weight: 400; 
+            }
+            .workspace {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
             }
             textarea { 
                 width: 100%; 
-                height: 160px; 
-                background: rgba(10, 14, 26, 0.8); 
+                flex: 1;
+                min-height: 280px; 
+                background: rgba(14, 11, 13, 0.85); 
                 color: #f8fafc; 
-                border: 1px solid #232d4a; 
-                border-radius: 14px; 
+                border: 1px solid #32191d; 
+                border-radius: 12px; 
                 padding: 14px; 
-                font-size: 0.875rem; 
+                font-size: 0.9rem; 
                 resize: none; 
                 outline: none; 
                 margin-bottom: 16px; 
-                transition: all 0.2s;
+                line-height: 1.5;
             }
             textarea:focus { 
-                border-color: #6366f1; 
-                box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+                border-color: #ef4444; 
+                box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
             }
-            textarea::placeholder { color: #475569; }
+            textarea::placeholder { color: #4b5563; }
+            .footer-actions {
+                margin-top: auto;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
             button.action-btn { 
                 width: 100%; 
-                padding: 13px; 
+                padding: 14px; 
                 border-radius: 12px; 
-                font-weight: 600; 
-                font-size: 0.875rem; 
+                font-weight: 700; 
+                font-size: 0.9rem; 
                 cursor: pointer; 
                 border: none; 
-                margin-bottom: 12px; 
                 transition: all 0.2s ease; 
             }
             .btn-analyze { 
-                background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); 
+                background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); 
                 color: white; 
-                box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4); 
+                box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4); 
             }
             .btn-analyze:hover { 
-                transform: translateY(-1px);
-                box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6); 
+                opacity: 0.95;
+                box-shadow: 0 6px 20px rgba(239, 68, 68, 0.6); 
             }
             .btn-pro { 
-                background: rgba(24, 33, 54, 0.6); 
-                color: #cbd5e1; 
-                border: 1px solid rgba(42, 55, 89, 0.8); 
+                background: rgba(28, 20, 22, 0.8); 
+                color: #fca5a5; 
+                border: 1px solid rgba(239, 68, 68, 0.25); 
             }
             .btn-pro:hover { 
-                background: rgba(32, 43, 71, 0.8); 
+                background: rgba(43, 27, 30, 0.9); 
                 color: #ffffff;
-                border-color: #4f46e5;
             }
             #result { 
-                margin-top: 16px; 
+                margin-top: 12px; 
                 padding: 14px; 
-                border-radius: 12px; 
+                border-radius: 10px; 
                 font-size: 0.85rem; 
                 display: none; 
-                background: rgba(19, 25, 41, 0.9); 
-                border-left: 4px solid #6366f1; 
-                border: 1px solid rgba(255, 255, 255, 0.05);
+                background: rgba(22, 15, 17, 0.95); 
+                border-left: 4px solid #ef4444; 
+                border: 1px solid rgba(239, 68, 68, 0.2);
                 line-height: 1.5;
             }
         </style>
     </head>
     <body>
-        <div class="card">
+        <div class="app-container">
             <div class="header-row">
-                <div class="logo-container">
-                    <h1>AuditGuard AI</h1>
-                </div>
+                <h1>AuditGuard AI</h1>
                 <button class="auth-toggle-btn" onclick="toggleAuthBox()">Log In / Sign Up</button>
             </div>
 
@@ -258,12 +253,17 @@ async def index():
             </div>
 
             <!-- Main Contract Analysis Workspace -->
-            <div>
+            <div class="workspace">
                 <p class="instruction-text">Paste your contract text below for an instant risk evaluation.</p>
                 <textarea id="contractInput" placeholder="Paste contract text here..."></textarea>
             </div>
-            <button class="action-btn btn-analyze" onclick="submitAudit()">Analyze Contract</button>
-            <button class="action-btn btn-pro" onclick="upgradeAccount()">Upgrade to Pro (Remove Limits)</button>
+
+            <!-- Footer Action Buttons -->
+            <div class="footer-actions">
+                <button class="action-btn btn-analyze" onclick="submitAudit()">Analyze Contract</button>
+                <button class="action-btn btn-pro" onclick="upgradeAccount()">Upgrade to Pro (Remove Limits)</button>
+            </div>
+            
             <div id="result"></div>
         </div>
 
