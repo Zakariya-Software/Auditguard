@@ -176,12 +176,18 @@ async def index():
             }
 
             async function upgradeAccount() {
-                const res = await fetch('/upgrade', { method: 'POST' });
-                const data = await res.json();
-                if (data.authorization_url) {
-                    window.location.href = data.authorization_url;
-                } else {
-                    alert('Unable to start payment. Check your internet or Paystack keys.');
+                try {
+                    const res = await fetch('/upgrade', { method: 'POST' });
+                    const data = await res.json();
+                    if (res.ok && data.authorization_url) {
+                        window.location.href = data.authorization_url;
+                    } else {
+                        alert(data.detail || 'Please sign up or log in first before upgrading to Pro.');
+                        document.getElementById('authBox').style.display = 'block';
+                        document.getElementById('authEmail').focus();
+                    }
+                } catch (err) {
+                    alert('Network error. Please try again.');
                 }
             }
         </script>
@@ -260,8 +266,16 @@ async def audit_contract(request: Request, response: Response, contract: Contrac
 
 @app.post("/upgrade")
 async def upgrade(request: Request):
+    user_email = request.session.get("user")
+    
+    # Enforce sign-up / login before permitting payment initialization
+    if not user_email or user_email not in USERS_DB:
+        raise HTTPException(
+            status_code=401,
+            detail="Please sign up or log in first before upgrading to Pro."
+        )
+
     client_ip = request.client.host
-    user_email = request.session.get("user", f"user_{client_ip.replace('.', '_')}@auditguard")
 
     async with httpx.AsyncClient() as client:
         res = await client.post(
@@ -302,4 +316,3 @@ async def verify(reference: str):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-
