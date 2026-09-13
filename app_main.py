@@ -392,11 +392,11 @@ async def index():
                 <div id="authStatus"></div>
             </div>
 
-            <!-- History Section Down Below -->
+            <!-- History Section Down Below (Visible only for Paid / Pro Users) -->
             <div class="history-container">
                 <div class="history-title">Analysis History (<span id="historyCount">0</span>)</div>
                 <div id="historyList" class="history-list">
-                    <p style="font-size: 0.75rem; color: #64748b;">No analyses yet.</p>
+                    <p style="font-size: 0.75rem; color: #64748b;">Upgrade to Pro to view analysis history.</p>
                 </div>
             </div>
         </div>
@@ -445,7 +445,7 @@ async def index():
                     countEl.innerText = data.history.length;
                     
                     if (data.history.length === 0) {
-                        listEl.innerHTML = '<p style="font-size: 0.75rem; color: #64748b;">No analyses yet.</p>';
+                        listEl.innerHTML = '<p style="font-size: 0.75rem; color: #64748b;">Upgrade to Pro to view analysis history.</p>';
                         return;
                     }
                     
@@ -607,11 +607,20 @@ async def session_info(request: Request):
 @app.get("/history")
 async def get_history(request: Request):
     user_email = request.session.get("user")
-    identifier = user_email if user_email else request.client.host
+    if not user_email:
+        return {"history": []}
     
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
-    cursor.execute("SELECT date, snippet, full_text, risk, details FROM history WHERE identifier = ? ORDER BY id DESC", (identifier,))
+    cursor.execute("SELECT is_paid FROM users WHERE email = ?", (user_email,))
+    row = cursor.fetchone()
+    
+    # If the user has not paid, do not return history items
+    if not row or row[0] != 1:
+        conn.close()
+        return {"history": []}
+    
+    cursor.execute("SELECT date, snippet, full_text, risk, details FROM history WHERE identifier = ? ORDER BY id DESC", (user_email,))
     rows = cursor.fetchall()
     conn.close()
     
