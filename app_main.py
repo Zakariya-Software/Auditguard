@@ -1,6 +1,7 @@
 import os
 import httpx
 import hashlib
+import sqlite3
 from datetime import datetime
 from fastapi import FastAPI, Request, Response, HTTPException, Form
 from fastapi.responses import HTMLResponse, FileResponse
@@ -15,10 +16,34 @@ app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET", "su
 PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY", "")
 BASE_URL = os.getenv("BASE_URL", "https://web-production-b74c4.up.railway.app")
 
-# STORAGE
-USERS_DB = {}
-PAID_USERS = set()
-GUEST_HISTORY = {} # ip -> list of analyses
+# PERSISTENT DATABASE SETUP (SQLite)
+DB_FILE = "auditguard.db"
+
+def init_db():
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            email TEXT PRIMARY KEY,
+            password_hash TEXT NOT NULL,
+            is_paid INTEGER NOT NULL DEFAULT 0
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            identifier TEXT NOT NULL,
+            date TEXT NOT NULL,
+            snippet TEXT NOT NULL,
+            full_text TEXT NOT NULL,
+            risk TEXT NOT NULL,
+            details TEXT NOT NULL
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+init_db()
 
 class ContractRequest(BaseModel):
     contract_text: str
@@ -26,7 +51,7 @@ class ContractRequest(BaseModel):
 def hash_password(password: str) -> str:
     salt = os.urandom(16)
     pwd_hash = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100_000)
-    return salt.hex() + pwd_hash.hex()
+    return salt.hex() + "." + pwd_hash.hex()
 
 def verify_password(password: str, stored_hash: str) -> bool:
     try:
@@ -425,7 +450,7 @@ async def index():
                     }
                     
                     listEl.innerHTML = '';
-                    data.history.reverse().forEach((item, index) => {
+                    data.history.forEach((item) => {
                         const div = document.createElement('div');
                         div.className = 'history-item';
                         div.innerHTML = `
@@ -569,36 +594,64 @@ async def get_sw():
 @app.get("/session-info")
 async def session_info(request: Request):
     user_email = request.session.get("user")
-    if user_email and user_email in USERS_DB:
-        return {"logged_in": True, "email": user_email}
+    if user_email:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute("SELECT email FROM users WHERE email = ?", (user_email,))
+        row = cursor.fetchone()
+        conn.close()
+        if row:
+            return {"logged_in": True, "email": row[0]}
     return {"logged_in": False}
 
 @app.get("/history")
 async def get_history(request: Request):
     user_email = request.session.get("user")
-    if user_email and user_email in USERS_DB:
-        return {"history": USERS_DB[user_email].get("history", [])}
+    identifier = user_email if user_email else request.client.host
     
-    client_ip = request.client.host
-    return {"history": GUEST_HISTORY.get(client_ip, [])}
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("SELECT date, snippet, full_text, risk, details FROM history WHERE identifier = ? ORDER BY id DESC", (identifier,))
+    rows = cursor.fetchall()
+    conn.close()
+    
+    history_list = []
+    for row in rows:
+        history_list.append({
+            "date": row[0],
+            "snippet": row[1],
+            "full_text": row[2],
+            "risk": row[3],
+            "details": row[4]
+        })
+    return {"history": history_list}
 
 @app.post("/signup")
 async def signup(request: Request, email: str = Form(...), password: str = Form(...)):
-    if email in USERS_DB:
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("SELECT email FROM users WHERE email = ?", (email,))
+    if cursor.fetchone():
+        conn.close()
         raise HTTPException(status_code=400, detail="Email already registered")
     
-    USERS_DB[email] = {
-        "password_hash": hash_password(password),
-        "is_paid": False,
-        "history": []
-    }
+    pwd_hash = hash_password(password)
+    cursor.execute("INSERT INTO users (email, password_hash, is_paid) VALUES (?, ?, 0)", (email, pwd_hash))
+    conn.commit()
+    conn.close()
+    
     request.session["user"] = email
     return {"message": "Account created successfully"}
 
 @app.post("/login")
 async def login(request: Request, email: str = Form(...), password: str = Form(...)):
-    user = USERS_DB.get(email)
-    if not user or not verify_password(password, user["password_hash"]):
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("SELECT password_hash FROM users WHERE email = ?", (email,))
+    row = cursor.fetchone()
+    conn.close()
+    
+    if not row or not verify_password(password, row[0]):
         raise HTTPException(status_code=400, detail="Incorrect email or password")
     
     request.session["user"] = email
@@ -614,26 +667,26 @@ async def audit_contract(request: Request, response: Response, contract: Contrac
     user_email = request.session.get("user")
     analysis = analyze_contract_liability(contract.contract_text)
     
-    history_entry = {
-        "date": datetime.now().strftime("%b %d, %H:%M"),
-        "snippet": contract.contract_text[:60] + "..." if len(contract.contract_text) > 60 else contract.contract_text,
-        "full_text": contract.contract_text,
-        "risk": analysis["risk_score"],
-        "details": analysis["details"]
-    }
+    date_str = datetime.now().strftime("%b %d, %H:%M")
+    snippet = contract.contract_text[:60] + "..." if len(contract.contract_text) > 60 else contract.contract_text
+    identifier = user_email if user_email else request.client.host
 
-    if user_email and user_email in USERS_DB:
-        USERS_DB[user_email]["history"].append(history_entry)
-        if USERS_DB[user_email]["is_paid"]:
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO history (identifier, date, snippet, full_text, risk, details) VALUES (?, ?, ?, ?, ?, ?)",
+        (identifier, date_str, snippet, contract.contract_text, analysis["risk_score"], analysis["details"])
+    )
+    conn.commit()
+
+    if user_email:
+        cursor.execute("SELECT is_paid FROM users WHERE email = ?", (user_email,))
+        row = cursor.fetchone()
+        conn.close()
+        if row and row[0] == 1:
             return {"success": True, "trials_used": "unlimited", "analysis": analysis}
-
-    client_ip = request.client.host
-    if client_ip not in GUEST_HISTORY:
-        GUEST_HISTORY[client_ip] = []
-    GUEST_HISTORY[client_ip].append(history_entry)
-
-    if client_ip in PAID_USERS:
-        return {"success": True, "trials_used": "unlimited", "analysis": analysis}
+    else:
+        conn.close()
 
     trials_cookie = request.cookies.get("trials", "0")
     try:
@@ -660,13 +713,22 @@ async def audit_contract(request: Request, response: Response, contract: Contrac
 async def upgrade(request: Request):
     user_email = request.session.get("user")
     
-    if not user_email or user_email not in USERS_DB:
+    if not user_email:
         raise HTTPException(
             status_code=401,
             detail="Please sign up or log in first before upgrading to Pro."
         )
 
-    client_ip = request.client.host
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("SELECT email FROM users WHERE email = ?", (user_email,))
+    if not cursor.fetchone():
+        conn.close()
+        raise HTTPException(
+            status_code=401,
+            detail="Please sign up or log in first before upgrading to Pro."
+        )
+    conn.close()
 
     async with httpx.AsyncClient() as client:
         res = await client.post(
@@ -676,7 +738,7 @@ async def upgrade(request: Request):
                 "amount": 50000,
                 "currency": "KES",
                 "callback_url": f"{BASE_URL}/verify",
-                "metadata": {"ip": client_ip, "email": user_email}
+                "metadata": {"email": user_email}
             },
             headers={"Authorization": f"Bearer {PAYSTACK_SECRET_KEY}"}
         )
@@ -694,15 +756,15 @@ async def verify(reference: str):
     if data.get("status") and data.get("data").get("status") == "success":
         metadata = data.get("data").get("metadata", {})
         user_email = metadata.get("email")
-        if user_email and user_email in USERS_DB:
-            USERS_DB[user_email]["is_paid"] = True
+        if user_email:
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            cursor.execute("UPDATE users SET is_paid = 1 WHERE email = ?", (user_email,))
+            conn.commit()
+            conn.close()
             
-        client_ip = metadata.get("ip")
-        if client_ip:
-            PAID_USERS.add(client_ip)
-            
-        return HTMLResponse("<h1>Upgrade Successful!</h1><p>You now have unlimited access across devices.</p><a href='/'>Try AuditGuard</a>")
-    return HTMLResponse("<h1>Payment Failed</h1><p>Try again</p><a href='/'>Try again</a>")
+        return HTMLResponse("<h1>Upgrade Successful!</h1><p>Your Pro status is permanently linked to your account database.</p><a href='/'>Return to AuditGuard</a>")
+    return HTMLResponse("<h1>Payment Failed</h1><p>Please try again.</p><a href='/'>Return to AuditGuard</a>")
 
 if __name__ == "__main__":
     import uvicorn
