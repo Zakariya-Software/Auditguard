@@ -12,8 +12,8 @@ app = FastAPI()
 app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET", "super-secret-key-change-this"))
 
 # CONFIGURATION
-PAYSTACK_SECRET_KEY = os.environ.get("PAYSTACK_SECRET_KEY", "")
-BASE_URL = os.environ.get("BASE_URL", "https://web-production-b74c4.up.railway.app")
+PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY", "")
+BASE_URL = os.getenv("BASE_URL", "https://web-production-b74c4.up.railway.app")
 
 # STORAGE
 USERS_DB = {}
@@ -25,7 +25,7 @@ class ContractRequest(BaseModel):
 def hash_password(password: str) -> str:
     salt = os.urandom(16)
     pwd_hash = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100_000)
-    return salt.hex() + "." + pwd_hash.hex()
+    return salt.hex() + pwd_hash.hex()
 
 def verify_password(password: str, stored_hash: str) -> bool:
     try:
@@ -40,136 +40,154 @@ def analyze_contract_liability(text: str):
     text_lower = text.lower()
     risk_score = "LOW"
     details = "The AI found no immediate high-risk clauses. This contract appears standard."
-
+    
     risky_words = ["liable", "indemnify", "breach", "terminate", "penalty", "interest"]
     found = [word for word in risky_words if word in text_lower]
-
+    
     if len(found) > 0:
         risk_score = "CRITICAL"
         details = f"Warning: Potential high-risk clauses found regarding: {', '.join(found)}. Review these carefully."
-
+        
     return {"risk_score": risk_score, "details": details}
 
 @app.get("/", response_class=HTMLResponse)
 async def index():
     return """
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="onesvibe-claim" content="ov-f7f1e767-cfff-4c6b-b047-cd9540225de2">
-    <title>AuditGuard AI</title>
-    <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#38bdf8">
-    <meta name="mobile-web-app-capable" content="yes">
-    <style>
-        body { font-family: sans-serif; background: #0b0e11; color: white; display: flex; justify-content: center; padding: 20px; }
-        .card { width: 100%; max-width: 450px; background: #161a2e; padding: 25px; border-radius: 12px; border: 1px solid #334155; }
-        h1 { color: #38bdf8; margin-bottom: 15px; }
-        p { color: #a38df8; margin-bottom: 15px; }
-        textarea { width: 100%; height: 150px; background: #0b0e11; color: #f8fafc; border: 1px solid #334155; border-radius: 8px; padding: 12px; }
-        button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .btn-analyze { background: #00284c; color: white; }
-        .btn-pro { background: #16343a; color: white; }
-        #result { margin-top: 20px; padding: 15px; border-radius: 8px; display: none; background: #0b0e11; border-left: 4px solid #38bdf8; }
-        .auth-box { margin-top: 20px; padding-bottom: 15px; border-bottom: 1px solid #334155; }
-        .auth-box input { width: 100%; padding: 10px; background: #0b0e11; color: #f8fafc; border: 1px solid #334155; border-radius: 8px; margin-top: 8px; }
-        .auth-row { display: flex; gap: 8px; }
-        .auth-row button { background: #334155; color: white; }
-    </style>
-</head>
-<body>
-    <div class="card">
-        <h1>AuditGuard AI</h1>
-        <div class="auth-box">
-            <p>Account Access (Sync across devices)</p>
-            <input type="email" id="authEmail" placeholder="Enter email...">
-            <input type="password" id="authPassword" placeholder="Enter password...">
-            <div class="auth-row">
-                <button onclick="handleAuth('signup')">Sign Up</button>
-                <button onclick="handleAuth('login')">Log In</button>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>AuditGuard AI</title>
+        <link rel="manifest" href="/manifest.json">
+        <meta name="theme-color" content="#20b8f5">
+        <meta name="mobile-web-app-capable" content="yes">
+        <style>
+            body { font-family: sans-serif; background: #07090e; color: #f8fafc; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 16px; box-sizing: border-box; }
+            .card { width: 100%; max-width: 450px; background: #0f1423; padding: 24px; border-radius: 16px; border: 1px solid #1e263c; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); box-sizing: border-box; }
+            .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+            h1 { font-size: 1.25rem; font-weight: bold; margin: 0; color: #ffffff; }
+            .auth-toggle-btn { font-size: 0.75rem; color: #818cf8; background: none; border: none; cursor: pointer; font-weight: 500; padding: 0; }
+            .auth-toggle-btn:hover { color: #a5b4fc; }
+            .auth-box { display: none; background: #131929; border: 1px solid #232d4a; border-radius: 12px; padding: 14px; margin-bottom: 20px; }
+            .auth-box input { width: 100%; padding: 10px; background: #07090e; border: 1px solid #2a3759; border-radius: 8px; color: #f8fafc; font-size: 0.85rem; margin-bottom: 10px; box-sizing: border-box; outline: none; }
+            .auth-row { display: flex; gap: 8px; }
+            .auth-row button { flex: 1; padding: 8px; border-radius: 8px; font-size: 0.75rem; font-weight: bold; cursor: pointer; border: none; }
+            .btn-signup { background: #334155; color: white; }
+            .btn-login { background: #4f46e5; color: white; }
+            #authStatus { font-size: 0.75rem; margin-top: 8px; text-align: center; }
+            p { font-size: 0.8rem; color: #94a3b8; margin-bottom: 10px; margin-top: 0; }
+            textarea { width: 100%; height: 150px; background: #131929; color: #f8fafc; border: 1px solid #232d4a; border-radius: 12px; padding: 12px; box-sizing: border-box; font-size: 0.875rem; resize: none; outline: none; margin-bottom: 12px; }
+            textarea::placeholder { color: #64748b; }
+            button { width: 100%; padding: 12px; border-radius: 12px; font-weight: bold; font-size: 0.875rem; cursor: pointer; border: none; margin-bottom: 10px; transition: background 0.2s; box-sizing: border-box; }
+            .btn-analyze { background: #4f46e5; color: white; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); }
+            .btn-analyze:hover { background: #4338ca; }
+            .btn-pro { background: #182136; color: #cbd5e1; border: 1px solid #2a3759; font-weight: 500; }
+            .btn-pro:hover { background: #202b47; }
+            #result { margin-top: 15px; padding: 12px; border-radius: 8px; font-size: 0.85rem; display: none; background: #131929; border-left: 4px solid #4f46e5; }
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <div class="header-row">
+                <h1>AuditGuard AI</h1>
+                <button class="auth-toggle-btn" onclick="toggleAuthBox()">Log In / Sign Up</button>
             </div>
-            <div id="authStatus" style="font-size: 12px; color: #38bdf8; margin-top: 5px;"></div>
+
+            <!-- Collapsible Auth Section -->
+            <div id="authBox" class="auth-box">
+                <p style="margin-bottom: 8px; color: #cbd5e1;">Account Access (Sync across devices)</p>
+                <input type="email" id="authEmail" placeholder="Enter email...">
+                <input type="password" id="authPassword" placeholder="Enter password...">
+                <div class="auth-row">
+                    <button class="btn-signup" onclick="handleAuth('signup')">Sign Up</button>
+                    <button class="btn-login" onclick="handleAuth('login')">Log In</button>
+                </div>
+                <div id="authStatus"></div>
+            </div>
+
+            <!-- Main Contract Analysis Workspace -->
+            <div>
+                <p>Paste your contract text below for an instant risk evaluation.</p>
+                <textarea id="contractInput" placeholder="Paste contract text here..."></textarea>
+            </div>
+            <button class="btn-analyze" onclick="submitAudit()">Analyze Contract</button>
+            <button class="btn-pro" onclick="upgradeAccount()">Upgrade to Pro (Remove Limits)</button>
+            <div id="result"></div>
         </div>
-        <p>Paste your contract text below for an instant risk evaluation.</p>
-        <textarea id="contractInput" placeholder="Paste contract text here..."></textarea>
-        <button class="btn-analyze" onclick="submitAudit()">Analyze Contract</button>
-        <button class="btn-pro" onclick="upgradeAccount()">Upgrade to Pro (Remove Limits)</button>
-        <div id="result"></div>
-    </div>
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js');
-            });
-        }
 
-        async function handleAuth(action) {
-            const email = document.getElementById('authEmail').value;
-            const password = document.getElementById('authPassword').value;
-            const statusEl = document.getElementById('authStatus');
+        <script>
+            function toggleAuthBox() {
+                const box = document.getElementById('authBox');
+                box.style.display = box.style.display === 'block' ? 'none' : 'block';
+            }
 
-            const formData = new URLSearchParams();
-            formData.append('email', email);
-            formData.append('password', password);
+            async function handleAuth(action) {
+                const email = document.getElementById('authEmail').value;
+                const password = document.getElementById('authPassword').value;
+                const statusEl = document.getElementById('authStatus');
+                
+                const formData = new URLSearchParams();
+                formData.append('email', email);
+                formData.append('password', password);
 
-            try {
-                const res = await fetch('/' + action, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: formData
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    statusEl.style.color = '#10b981';
-                    statusEl.innerText = data.message;
-                } else {
+                try {
+                    const res = await fetch('/' + action, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: formData
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        statusEl.style.color = '#4ade80';
+                        statusEl.innerText = data.message;
+                        setTimeout(() => { document.getElementById('authBox').style.display = 'none'; }, 1500);
+                    } else {
+                        statusEl.style.color = '#ef4444';
+                        statusEl.innerText = data.detail || 'Authentication failed';
+                    }
+                } catch (err) {
                     statusEl.style.color = '#ef4444';
-                    statusEl.innerText = data.detail || 'Authentication failed';
+                    statusEl.innerText = 'Network error during auth';
                 }
-            } catch (err) {
-                statusEl.style.color = '#ef4444';
-                statusEl.innerText = 'Network error during auth';
             }
-        }
 
-        async function submitAudit() {
-            const text = document.getElementById('contractInput').value;
-            const resDiv = document.getElementById('result');
-            resDiv.style.display = 'block';
-            resDiv.innerHTML = 'Analyzing contract...';
+            async function submitAudit() {
+                const text = document.getElementById('contractInput').value;
+                const resDiv = document.getElementById('result');
+                resDiv.style.display = 'block';
+                resDiv.innerHTML = 'Analyzing contract...';
 
-            try {
-                const res = await fetch('/audit', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contract_text: text })
-                });
+                try {
+                    const res = await fetch('/audit', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contract_text: text })
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        resDiv.innerHTML = `<strong>Status:</strong> Success<br><strong>Trials Used:</strong> ${data.trials_used}<br><br><strong>Risk Score:</strong> ${data.analysis.risk_score}<br><strong>Details:</strong> ${data.analysis.details}`;
+                    } else {
+                        resDiv.innerHTML = `<span style="color: #ef4444;">${data.detail}</span><br><br><button class="btn-pro" onclick="upgradeAccount()">Upgrade to Pro (Remove Limits)</button>`;
+                    }
+                } catch (err) {
+                    resDiv.innerHTML = `<span style="color: #ef4444;">Error connecting to server.</span>`;
+                }
+            }
+
+            async function upgradeAccount() {
+                const res = await fetch('/upgrade', { method: 'POST' });
                 const data = await res.json();
-                if (res.ok) {
-                    resDiv.innerHTML = `<strong>Status:</strong> ${data.success ? 'Success' : 'Failed'}<br><strong>Trials Used:</strong> ${data.trials_used}<br><hr>${data.analysis.details}`;
+                if (data.authorization_url) {
+                    window.location.href = data.authorization_url;
                 } else {
-                    resDiv.innerHTML = `<span style="color: #ef4444;">${data.detail}</span><br><button class="btn-pro" onclick="upgradeAccount()">Upgrade to Pro</button>`;
+                    alert('Unable to start payment. Check your internet or Paystack keys.');
                 }
-            } catch (err) {
-                resDiv.innerHTML = `<span style="color: #ef4444;">Error connecting to server.</span>`;
             }
-        }
-
-        async function upgradeAccount() {
-            const res = await fetch('/upgrade', { method: 'POST' });
-            const data = await res.json();
-            if (data.authorization_url) {
-                window.location.href = data.authorization_url;
-            } else {
-                alert('Unable to start payment. Check your internet or Paystack keys.');
-            }
-        }
-    </script>
-</body>
-</html>
-"""
+        </script>
+    </body>
+    </html>
+    """
 
 @app.get("/manifest.json")
 async def get_manifest():
@@ -188,7 +206,6 @@ async def signup(request: Request, email: str = Form(...), password: str = Form(
         "password_hash": hash_password(password),
         "is_paid": False
     }
-    
     request.session["user"] = email
     return {"message": "Account created successfully"}
 
@@ -201,7 +218,7 @@ async def login(request: Request, email: str = Form(...), password: str = Form(.
     request.session["user"] = email
     return {"message": "Logged in successfully"}
 
-@app.get("/logout")
+@app.post("/logout")
 async def logout(request: Request):
     request.session.pop("user", None)
     return {"message": "Logged out successfully"}
@@ -213,24 +230,24 @@ async def audit_contract(request: Request, response: Response, contract: Contrac
     if user_email and user_email in USERS_DB and USERS_DB[user_email]["is_paid"]:
         analysis = analyze_contract_liability(contract.contract_text)
         return {"success": True, "trials_used": "unlimited", "analysis": analysis}
-    
+
     client_ip = request.client.host
     if client_ip in PAID_USERS:
         analysis = analyze_contract_liability(contract.contract_text)
         return {"success": True, "trials_used": "unlimited", "analysis": analysis}
-        
+
     trials_cookie = request.cookies.get("trials", "0")
     try:
         trials = int(trials_cookie)
     except ValueError:
         trials = 0
-        
+
     if trials >= 3:
         raise HTTPException(
             status_code=403,
             detail="Free trial limit reached (3/3). Please log in or upgrade to continue."
         )
-        
+
     new_trials = trials + 1
     response.set_cookie(key="trials", value=str(new_trials))
     
@@ -245,7 +262,7 @@ async def audit_contract(request: Request, response: Response, contract: Contrac
 async def upgrade(request: Request):
     client_ip = request.client.host
     user_email = request.session.get("user", f"user_{client_ip.replace('.', '_')}@auditguard")
-    
+
     async with httpx.AsyncClient() as client:
         res = await client.post(
             "https://api.paystack.co/transaction/initialize",
@@ -269,8 +286,8 @@ async def verify(reference: str):
             headers={"Authorization": f"Bearer {PAYSTACK_SECRET_KEY}"}
         )
     data = res.json()
-    if data.get("data") and data.get("data").get("status") == "success":
-        metadata = data["data"].get("metadata", {})
+    if data.get("status") and data.get("data").get("status") == "success":
+        metadata = data.get("data").get("metadata", {})
         user_email = metadata.get("email")
         if user_email and user_email in USERS_DB:
             USERS_DB[user_email]["is_paid"] = True
@@ -279,10 +296,10 @@ async def verify(reference: str):
         if client_ip:
             PAID_USERS.add(client_ip)
             
-        return HTMLResponse("<h1>Upgrade Successful!</h1><p>You now have unlimited access across devices.</p><a href='/'>Try again</a>")
-    return HTMLResponse("<h1>Payment Failed</h1><a href='/'>Try again</a>")
+        return HTMLResponse("<h1>Upgrade Successful!</h1><p>You now have unlimited access across devices.</p><a href='/'>Try AuditGuard</a>")
+    return HTMLResponse("<h1>Payment Failed</h1><p>Try again</p><a href='/'>Try again</a>")
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+
