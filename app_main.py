@@ -26,9 +26,17 @@ def init_db():
         CREATE TABLE IF NOT EXISTS users (
             email TEXT PRIMARY KEY,
             password_hash TEXT NOT NULL,
-            is_paid INTEGER NOT NULL DEFAULT 0
+            is_paid INTEGER NOT NULL DEFAULT 0,
+            trials_used INTEGER NOT NULL DEFAULT 0
         )
     ''')
+    
+    # Safe check in case table already existed without trials_used
+    cursor.execute("PRAGMA table_info(users)")
+    columns = [col[1] for col in cursor.fetchall()]
+    if "trials_used" not in columns:
+        cursor.execute("ALTER TABLE users ADD COLUMN trials_used INTEGER NOT NULL DEFAULT 0")
+
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -86,15 +94,15 @@ async def index():
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>AuditGuard AI - Contract Risk Analysis</title>
         <link rel="manifest" href="/manifest.json">
-        <meta name="theme-color" content="#090a0f">
+        <meta name="theme-color" content="#07080c">
         <meta name="mobile-web-app-capable" content="yes">
         <style>
             * { box-sizing: border-box; }
             body { 
                 font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-                background: radial-gradient(circle at 15% 15%, rgba(239, 68, 68, 0.12) 0%, transparent 40%), 
-                            radial-gradient(circle at 85% 15%, rgba(59, 130, 246, 0.12) 0%, transparent 40%), 
-                            radial-gradient(circle at 50% 85%, rgba(16, 185, 129, 0.1) 0%, transparent 50%), 
+                background: radial-gradient(circle at 15% 15%, rgba(244, 63, 94, 0.15) 0%, transparent 40%), 
+                            radial-gradient(circle at 85% 15%, rgba(59, 130, 246, 0.15) 0%, transparent 40%), 
+                            radial-gradient(circle at 50% 85%, rgba(16, 185, 129, 0.12) 0%, transparent 50%), 
                             #07080c; 
                 color: #f8fafc; 
                 display: flex; 
@@ -113,7 +121,7 @@ async def index():
                 padding: 20px; 
                 border-radius: 16px; 
                 border: 1px solid rgba(255, 255, 255, 0.08); 
-                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(59, 130, 246, 0.05); 
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8), 0 0 25px rgba(59, 130, 246, 0.08); 
             }
             .header-row { 
                 display: flex; 
@@ -658,12 +666,13 @@ async def signup(request: Request, email: str = Form(...), password: str = Form(
         raise HTTPException(status_code=400, detail="Email already registered")
     
     pwd_hash = hash_password(password)
-    cursor.execute("INSERT INTO users (email, password_hash, is_paid) VALUES (?, ?, 0)", (email, pwd_hash))
+    # Each new account gets its own independent trials_used starting at 0
+    cursor.execute("INSERT INTO users (email, password_hash, is_paid, trials_used) VALUES (?, ?, 0, 0)", (email, pwd_hash))
     conn.commit()
     conn.close()
     
     request.session["user"] = email
-    return {"message": "Account created successfully"}
+    return {"message": "Account created successfully! Enjoy your 3 free trials."}
 
 @app.post("/login")
 async def login(request: Request, email: str = Form(...), password: str = Form(...)):
@@ -702,14 +711,32 @@ async def audit_contract(request: Request, response: Response, contract: Contrac
     conn.commit()
 
     if user_email:
-        cursor.execute("SELECT is_paid FROM users WHERE email = ?", (user_email,))
+        cursor.execute("SELECT is_paid, trials_used FROM users WHERE email = ?", (user_email,))
         row = cursor.fetchone()
-        conn.close()
-        if row and row[0] == 1:
-            return {"success": True, "trials_used": "unlimited", "analysis": analysis}
-    else:
-        conn.close()
+        if row:
+            is_paid, trials_used = row[0], row[1]
+            if is_paid == 1:
+                conn.close()
+                return {"success": True, "trials_used": "unlimited", "analysis": analysis}
+            else:
+                if trials_used >= 3:
+                    conn.close()
+                    raise HTTPException(
+                        status_code=403,
+                        detail="Free trial limit reached (3/3). Please upgrade to Pro to continue."
+                    )
+                new_trials = trials_used + 1
+                cursor.execute("UPDATE users SET trials_used = ? WHERE email = ?", (new_trials, user_email))
+                conn.commit()
+                conn.close()
+                return {
+                    "success": True,
+                    "trials_used": f"{new_trials}/3",
+                    "analysis": analysis
+                }
+    conn.close()
 
+    # Anonymous user trial tracking via cookies
     trials_cookie = request.cookies.get("trials", "0")
     try:
         trials = int(trials_cookie)
@@ -719,7 +746,7 @@ async def audit_contract(request: Request, response: Response, contract: Contrac
     if trials >= 3:
         raise HTTPException(
             status_code=403,
-            detail="Free trial limit reached (3/3). Please log in or upgrade to continue."
+            detail="Free trial limit reached (3/3). Please log in or sign up to get 3 new free trials!"
         )
 
     new_trials = trials + 1
@@ -727,7 +754,7 @@ async def audit_contract(request: Request, response: Response, contract: Contrac
     
     return {
         "success": True,
-        "trials_used": new_trials,
+        "trials_used": f"{new_trials}/3",
         "analysis": analysis
     }
 
