@@ -1,7 +1,7 @@
 import os
 import httpx
 import hashlib
-from datetime import date
+from datetime import datetime
 from fastapi import FastAPI, Request, Response, HTTPException, Form
 from fastapi.responses import HTMLResponse, FileResponse
 from pydantic import BaseModel
@@ -18,6 +18,7 @@ BASE_URL = os.getenv("BASE_URL", "https://web-production-b74c4.up.railway.app")
 # STORAGE
 USERS_DB = {}
 PAID_USERS = set()
+GUEST_HISTORY = {} # ip -> list of analyses
 
 class ContractRequest(BaseModel):
     contract_text: str
@@ -93,6 +94,22 @@ async def index():
                 border-bottom: 1px solid rgba(255, 255, 255, 0.08);
                 padding-bottom: 12px;
             }
+            .header-left {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+            .menu-btn {
+                background: none;
+                border: none;
+                color: #f8fafc;
+                font-size: 1.4rem;
+                cursor: pointer;
+                padding: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
             h1 { 
                 font-size: 1.3rem; 
                 font-weight: 800; 
@@ -102,59 +119,149 @@ async def index():
                 -webkit-text-fill-color: transparent;
                 letter-spacing: -0.02em;
             }
-            .auth-toggle-btn { 
-                font-size: 0.75rem; 
-                color: #fca5a5; 
-                background: rgba(239, 68, 68, 0.1); 
-                border: 1px solid rgba(239, 68, 68, 0.25); 
-                padding: 6px 12px;
-                border-radius: 20px;
-                cursor: pointer; 
-                font-weight: 600; 
-                transition: all 0.2s ease;
+            
+            /* Sidebar Drawer Styles */
+            .sidebar-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.6);
+                backdrop-filter: blur(4px);
+                z-index: 999;
+                display: none;
+                opacity: 0;
+                transition: opacity 0.3s ease;
             }
-            .auth-toggle-btn:hover { 
-                background: rgba(239, 68, 68, 0.2); 
-                color: #ffffff;
+            .sidebar-overlay.active {
+                display: block;
+                opacity: 1;
             }
-            .auth-box { 
-                display: none; 
-                background: rgba(24, 16, 18, 0.95); 
-                border: 1px solid rgba(239, 68, 68, 0.3); 
-                border-radius: 12px; 
-                padding: 14px; 
-                margin-bottom: 16px; 
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: -300px;
+                width: 300px;
+                height: 100%;
+                background: #120d0f;
+                border-right: 1px solid rgba(239, 68, 68, 0.2);
+                z-index: 1000;
+                display: flex;
+                flex-direction: column;
+                transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                box-shadow: 10px 0 30px rgba(0, 0, 0, 0.9);
+                padding: 20px;
+                overflow-y: auto;
             }
-            .auth-box input { 
-                width: 100%; 
-                padding: 10px 12px; 
-                background: #090a0f; 
-                border: 1px solid #3f1d22; 
-                border-radius: 8px; 
-                color: #f8fafc; 
-                font-size: 0.85rem; 
-                margin-bottom: 10px; 
-                outline: none; 
+            .sidebar.active {
+                left: 0;
             }
-            .auth-box input:focus {
+            .sidebar-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 20px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+                padding-bottom: 12px;
+            }
+            .sidebar-header h2 {
+                font-size: 1.1rem;
+                margin: 0;
+                color: #fca5a5;
+            }
+            .close-sidebar {
+                background: none;
+                border: none;
+                color: #94a3b8;
+                font-size: 1.2rem;
+                cursor: pointer;
+            }
+            .profile-section {
+                background: rgba(239, 68, 68, 0.08);
+                border: 1px solid rgba(239, 68, 68, 0.2);
+                border-radius: 12px;
+                padding: 14px;
+                margin-bottom: 20px;
+            }
+            .profile-section input {
+                width: 100%;
+                padding: 10px;
+                background: #090a0f;
+                border: 1px solid #3f1d22;
+                border-radius: 8px;
+                color: #f8fafc;
+                font-size: 0.8rem;
+                margin-bottom: 8px;
+                outline: none;
+            }
+            .profile-section input:focus {
                 border-color: #ef4444;
             }
-            .auth-row { 
-                display: flex; 
-                gap: 8px; 
+            .profile-row {
+                display: flex;
+                gap: 6px;
+                margin-top: 6px;
             }
-            .auth-row button { 
-                flex: 1; 
-                padding: 8px; 
-                border-radius: 8px; 
-                font-size: 0.75rem; 
-                font-weight: 600; 
-                cursor: pointer; 
-                border: none; 
+            .profile-row button {
+                flex: 1;
+                padding: 8px;
+                border-radius: 8px;
+                font-size: 0.75rem;
+                font-weight: 600;
+                cursor: pointer;
+                border: none;
             }
             .btn-signup { background: #332729; color: #cbd5e1; }
             .btn-login { background: #ef4444; color: white; }
+            .history-container {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+            }
+            .history-title {
+                font-size: 0.85rem;
+                font-weight: 700;
+                color: #cbd5e1;
+                margin-bottom: 10px;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+            .history-list {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                max-height: calc(100vh - 280px);
+                overflow-y: auto;
+            }
+            .history-item {
+                background: rgba(22, 15, 17, 0.8);
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                border-radius: 8px;
+                padding: 10px;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+            .history-item:hover {
+                border-color: rgba(239, 68, 68, 0.4);
+                background: rgba(30, 20, 23, 0.9);
+            }
+            .history-item-header {
+                display: flex;
+                justify-content: space-between;
+                font-size: 0.75rem;
+                color: #94a3b8;
+                margin-bottom: 4px;
+            }
+            .history-item-snippet {
+                font-size: 0.8rem;
+                color: #e2e8f0;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
             #authStatus { font-size: 0.75rem; margin-top: 6px; text-align: center; font-weight: 500; }
+
             .instruction-text { 
                 font-size: 0.85rem; 
                 color: #94a3b8; 
@@ -234,22 +341,47 @@ async def index():
         </style>
     </head>
     <body>
-        <div class="app-container">
-            <div class="header-row">
-                <h1>AuditGuard AI</h1>
-                <button class="auth-toggle-btn" onclick="toggleAuthBox()">Log In / Sign Up</button>
+        <!-- Sidebar Menu Drawer -->
+        <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+        <div id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <h2>Menu & Profile</h2>
+                <button class="close-sidebar" onclick="toggleSidebar()">✕</button>
             </div>
 
-            <!-- Collapsible Auth Section -->
-            <div id="authBox" class="auth-box">
-                <p style="margin-bottom: 8px; color: #cbd5e1; font-size: 0.8rem; font-weight: 500;">Account Access (Sync across devices)</p>
-                <input type="email" id="authEmail" placeholder="Enter email...">
-                <input type="password" id="authPassword" placeholder="Enter password...">
-                <div class="auth-row">
-                    <button class="btn-signup" onclick="handleAuth('signup')">Sign Up</button>
-                    <button class="btn-login" onclick="handleAuth('login')">Log In</button>
+            <!-- Profile / Auth Section on Top -->
+            <div class="profile-section" id="profileSection">
+                <p id="userStatusText" style="margin-bottom: 8px; color: #cbd5e1; font-size: 0.75rem; font-weight: 600;">Account / Profile</p>
+                <div id="authInputs">
+                    <input type="email" id="authEmail" placeholder="Email address...">
+                    <input type="password" id="authPassword" placeholder="Password...">
+                    <div class="profile-row">
+                        <button class="btn-signup" onclick="handleAuth('signup')">Sign Up</button>
+                        <button class="btn-login" onclick="handleAuth('login')">Log In</button>
+                    </div>
+                </div>
+                <div id="loggedInView" style="display: none;">
+                    <p id="currentUserEmail" style="font-size: 0.8rem; color: #fca5a5; margin-bottom: 8px; word-break: break-all;"></p>
+                    <button class="btn-login" style="width: 100%; padding: 8px;" onclick="handleLogout()">Log Out</button>
                 </div>
                 <div id="authStatus"></div>
+            </div>
+
+            <!-- History Section Down Below -->
+            <div class="history-container">
+                <div class="history-title">Analysis History (<span id="historyCount">0</span>)</div>
+                <div id="historyList" class="history-list">
+                    <p style="font-size: 0.75rem; color: #64748b;">No analyses yet.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="app-container">
+            <div class="header-row">
+                <div class="header-left">
+                    <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+                    <h1>AuditGuard AI</h1>
+                </div>
             </div>
 
             <!-- Main Contract Analysis Workspace -->
@@ -268,9 +400,53 @@ async def index():
         </div>
 
         <script>
-            function toggleAuthBox() {
-                const box = document.getElementById('authBox');
-                box.style.display = box.style.display === 'block' ? 'none' : 'block';
+            function toggleSidebar() {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('sidebarOverlay');
+                sidebar.classList.toggle('active');
+                overlay.classList.toggle('active');
+                if (sidebar.classList.contains('active')) {
+                    loadHistory();
+                }
+            }
+
+            async function loadHistory() {
+                try {
+                    const res = await fetch('/history');
+                    const data = await res.json();
+                    const listEl = document.getElementById('historyList');
+                    const countEl = document.getElementById('historyCount');
+                    
+                    countEl.innerText = data.history.length;
+                    
+                    if (data.history.length === 0) {
+                        listEl.innerHTML = '<p style="font-size: 0.75rem; color: #64748b;">No analyses yet.</p>';
+                        return;
+                    }
+                    
+                    listEl.innerHTML = '';
+                    data.history.reverse().forEach((item, index) => {
+                        const div = document.createElement('div');
+                        div.className = 'history-item';
+                        div.innerHTML = `
+                            <div class="history-item-header">
+                                <span>${item.date}</span>
+                                <span style="color: ${item.risk === 'CRITICAL' ? '#ef4444' : '#4ade80'}">${item.risk}</span>
+                            </div>
+                            <div class="history-item-snippet">${item.snippet}</div>
+                        `;
+                        div.onclick = () => {
+                            document.getElementById('contractInput').value = item.full_text;
+                            const resDiv = document.getElementById('result');
+                            resDiv.style.display = 'block';
+                            resDiv.innerHTML = `<strong>Loaded from History:</strong><br><strong>Risk Score:</strong> ${item.risk}<br><strong>Details:</strong> ${item.details}`;
+                            toggleSidebar();
+                        };
+                        listEl.appendChild(div);
+                    });
+                } catch (err) {
+                    console.error('Failed to load history');
+                }
             }
 
             async function handleAuth(action) {
@@ -292,7 +468,11 @@ async def index():
                     if (res.ok) {
                         statusEl.style.color = '#4ade80';
                         statusEl.innerText = data.message;
-                        setTimeout(() => { document.getElementById('authBox').style.display = 'none'; }, 1500);
+                        setTimeout(() => { 
+                            checkSession();
+                            loadHistory();
+                            statusEl.innerText = '';
+                        }, 1000);
                     } else {
                         statusEl.style.color = '#ef4444';
                         statusEl.innerText = data.detail || 'Authentication failed';
@@ -300,6 +480,35 @@ async def index():
                 } catch (err) {
                     statusEl.style.color = '#ef4444';
                     statusEl.innerText = 'Network error during auth';
+                }
+            }
+
+            async function handleLogout() {
+                try {
+                    await fetch('/logout', { method: 'POST' });
+                    checkSession();
+                    loadHistory();
+                } catch (err) {
+                    console.error('Logout error');
+                }
+            }
+
+            async function checkSession() {
+                try {
+                    const res = await fetch('/session-info');
+                    const data = await res.json();
+                    if (data.logged_in) {
+                        document.getElementById('authInputs').style.display = 'none';
+                        document.getElementById('loggedInView').style.display = 'block';
+                        document.getElementById('currentUserEmail').innerText = data.email;
+                        document.getElementById('userStatusText').innerText = 'Signed In Profile';
+                    } else {
+                        document.getElementById('authInputs').style.display = 'block';
+                        document.getElementById('loggedInView').style.display = 'none';
+                        document.getElementById('userStatusText').innerText = 'Account / Profile';
+                    }
+                } catch (err) {
+                    console.error('Session check failed');
                 }
             }
 
@@ -334,13 +543,16 @@ async def index():
                         window.location.href = data.authorization_url;
                     } else {
                         alert(data.detail || 'Please sign up or log in first before upgrading to Pro.');
-                        document.getElementById('authBox').style.display = 'block';
+                        toggleSidebar();
                         document.getElementById('authEmail').focus();
                     }
                 } catch (err) {
                     alert('Network error. Please try again.');
                 }
             }
+
+            // Initialize session info on load
+            checkSession();
         </script>
     </body>
     </html>
@@ -354,6 +566,22 @@ async def get_manifest():
 async def get_sw():
     return FileResponse("service-worker.js")
 
+@app.get("/session-info")
+async def session_info(request: Request):
+    user_email = request.session.get("user")
+    if user_email and user_email in USERS_DB:
+        return {"logged_in": True, "email": user_email}
+    return {"logged_in": False}
+
+@app.get("/history")
+async def get_history(request: Request):
+    user_email = request.session.get("user")
+    if user_email and user_email in USERS_DB:
+        return {"history": USERS_DB[user_email].get("history", [])}
+    
+    client_ip = request.client.host
+    return {"history": GUEST_HISTORY.get(client_ip, [])}
+
 @app.post("/signup")
 async def signup(request: Request, email: str = Form(...), password: str = Form(...)):
     if email in USERS_DB:
@@ -361,7 +589,8 @@ async def signup(request: Request, email: str = Form(...), password: str = Form(
     
     USERS_DB[email] = {
         "password_hash": hash_password(password),
-        "is_paid": False
+        "is_paid": False,
+        "history": []
     }
     request.session["user"] = email
     return {"message": "Account created successfully"}
@@ -383,14 +612,27 @@ async def logout(request: Request):
 @app.post("/audit")
 async def audit_contract(request: Request, response: Response, contract: ContractRequest):
     user_email = request.session.get("user")
+    analysis = analyze_contract_liability(contract.contract_text)
     
-    if user_email and user_email in USERS_DB and USERS_DB[user_email]["is_paid"]:
-        analysis = analyze_contract_liability(contract.contract_text)
-        return {"success": True, "trials_used": "unlimited", "analysis": analysis}
+    history_entry = {
+        "date": datetime.now().strftime("%b %d, %H:%M"),
+        "snippet": contract.contract_text[:60] + "..." if len(contract.contract_text) > 60 else contract.contract_text,
+        "full_text": contract.contract_text,
+        "risk": analysis["risk_score"],
+        "details": analysis["details"]
+    }
+
+    if user_email and user_email in USERS_DB:
+        USERS_DB[user_email]["history"].append(history_entry)
+        if USERS_DB[user_email]["is_paid"]:
+            return {"success": True, "trials_used": "unlimited", "analysis": analysis}
 
     client_ip = request.client.host
+    if client_ip not in GUEST_HISTORY:
+        GUEST_HISTORY[client_ip] = []
+    GUEST_HISTORY[client_ip].append(history_entry)
+
     if client_ip in PAID_USERS:
-        analysis = analyze_contract_liability(contract.contract_text)
         return {"success": True, "trials_used": "unlimited", "analysis": analysis}
 
     trials_cookie = request.cookies.get("trials", "0")
@@ -408,7 +650,6 @@ async def audit_contract(request: Request, response: Response, contract: Contrac
     new_trials = trials + 1
     response.set_cookie(key="trials", value=str(new_trials))
     
-    analysis = analyze_contract_liability(contract.contract_text)
     return {
         "success": True,
         "trials_used": new_trials,
