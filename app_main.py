@@ -92,7 +92,10 @@ async def index():
             * { box-sizing: border-box; }
             body { 
                 font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-                background: radial-gradient(circle at 50% 0%, #1f1315 0%, #090a0f 70%); 
+                background: radial-gradient(circle at 15% 15%, rgba(239, 68, 68, 0.12) 0%, transparent 40%), 
+                            radial-gradient(circle at 85% 15%, rgba(59, 130, 246, 0.12) 0%, transparent 40%), 
+                            radial-gradient(circle at 50% 85%, rgba(16, 185, 129, 0.1) 0%, transparent 50%), 
+                            #07080c; 
                 color: #f8fafc; 
                 display: flex; 
                 flex-direction: column;
@@ -105,11 +108,12 @@ async def index():
                 flex: 1;
                 display: flex;
                 flex-direction: column;
-                background: rgba(15, 12, 14, 0.9); 
+                background: rgba(13, 13, 18, 0.85); 
+                backdrop-filter: blur(12px);
                 padding: 20px; 
                 border-radius: 16px; 
-                border: 1px solid rgba(239, 68, 68, 0.15); 
-                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8); 
+                border: 1px solid rgba(255, 255, 255, 0.08); 
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(59, 130, 246, 0.05); 
             }
             .header-row { 
                 display: flex; 
@@ -139,7 +143,7 @@ async def index():
                 font-size: 1.3rem; 
                 font-weight: 800; 
                 margin: 0; 
-                background: linear-gradient(135deg, #ffffff 30%, #fca5a5 100%);
+                background: linear-gradient(135deg, #38bdf8 0%, #34d399 50%, #f43f5e 100%);
                 -webkit-background-clip: text;
                 -webkit-text-fill-color: transparent;
                 letter-spacing: -0.02em;
@@ -152,8 +156,8 @@ async def index():
                 left: 0;
                 width: 100%;
                 height: 100%;
-                background: rgba(0, 0, 0, 0.6);
-                backdrop-filter: blur(4px);
+                background: rgba(0, 0, 0, 0.7);
+                backdrop-filter: blur(6px);
                 z-index: 999;
                 display: none;
                 opacity: 0;
@@ -169,8 +173,8 @@ async def index():
                 left: -300px;
                 width: 300px;
                 height: 100%;
-                background: #120d0f;
-                border-right: 1px solid rgba(239, 68, 68, 0.2);
+                background: #0d0e14;
+                border-right: 1px solid rgba(59, 130, 246, 0.2);
                 z-index: 1000;
                 display: flex;
                 flex-direction: column;
@@ -193,7 +197,9 @@ async def index():
             .sidebar-header h2 {
                 font-size: 1.1rem;
                 margin: 0;
-                color: #fca5a5;
+                background: linear-gradient(135deg, #38bdf8, #34d399);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
             }
             .close-sidebar {
                 background: none;
@@ -203,8 +209,8 @@ async def index():
                 cursor: pointer;
             }
             .profile-section {
-                background: rgba(239, 68, 68, 0.08);
-                border: 1px solid rgba(239, 68, 68, 0.2);
+                background: rgba(15, 23, 42, 0.6);
+                border: 1px solid rgba(59, 130, 246, 0.25);
                 border-radius: 12px;
                 padding: 14px;
                 margin-bottom: 20px;
@@ -212,8 +218,8 @@ async def index():
             .profile-section input {
                 width: 100%;
                 padding: 10px;
-                background: #090a0f;
-                border: 1px solid #3f1d22;
+                background: #07080c;
+                border: 1px solid rgba(255, 255, 255, 0.1);
                 border-radius: 8px;
                 color: #f8fafc;
                 font-size: 0.8rem;
@@ -221,7 +227,8 @@ async def index():
                 outline: none;
             }
             .profile-section input:focus {
-                border-color: #ef4444;
+                border-color: #38bdf8;
+                box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
             }
             .profile-row {
                 display: flex;
@@ -237,8 +244,8 @@ async def index():
                 cursor: pointer;
                 border: none;
             }
-            .btn-signup { background: #332729; color: #cbd5e1; }
-            .btn-login { background: #ef4444; color: white; }
+            .btn-signup { background: #1e293b; color: #cbd5e1; }
+            .btn-login { background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; }
             .history-container {
                 flex: 1;
                 display: flex;
@@ -260,16 +267,16 @@ async def index():
                 overflow-y: auto;
             }
             .history-item {
-                background: rgba(22, 15, 17, 0.8);
-                border: 1px solid rgba(255, 255, 255, 0.05);
+                background: rgba(18, 20, 28, 0.8);
+                border: 1px solid rgba(255, 255, 255, 0.06);
                 border-radius: 8px;
                 padding: 10px;
                 cursor: pointer;
                 transition: all 0.2s;
             }
             .history-item:hover {
-                border-color: rgba(239, 68, 68, 0.4);
-                background: rgba(30, 20, 23, 0.9);
+                border-color: rgba(52, 211, 153, 0.4);
+                background: rgba(24, 28, 38, 0.9);
             }
             .history-item-header {
                 display: flex;
@@ -302,9 +309,9 @@ async def index():
                 width: 100%; 
                 flex: 1;
                 min-height: 280px; 
-                background: rgba(14, 11, 13, 0.85); 
+                background: rgba(10, 11, 16, 0.9); 
                 color: #f8fafc; 
-                border: 1px solid #32191d; 
+                border: 1px solid rgba(255, 255, 255, 0.08); 
                 border-radius: 12px; 
                 padding: 14px; 
                 font-size: 0.9rem; 
@@ -314,8 +321,8 @@ async def index():
                 line-height: 1.5;
             }
             textarea:focus { 
-                border-color: #ef4444; 
-                box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+                border-color: #38bdf8; 
+                box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
             }
             textarea::placeholder { color: #4b5563; }
             .footer-actions {
@@ -335,22 +342,23 @@ async def index():
                 transition: all 0.2s ease; 
             }
             .btn-analyze { 
-                background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); 
+                background: linear-gradient(135deg, #f43f5e 0%, #3b82f6 50%, #10b981 100%); 
                 color: white; 
-                box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4); 
+                box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3); 
             }
             .btn-analyze:hover { 
                 opacity: 0.95;
-                box-shadow: 0 6px 20px rgba(239, 68, 68, 0.6); 
+                box-shadow: 0 6px 20px rgba(52, 211, 153, 0.4); 
             }
             .btn-pro { 
-                background: rgba(28, 20, 22, 0.8); 
-                color: #fca5a5; 
-                border: 1px solid rgba(239, 68, 68, 0.25); 
+                background: rgba(20, 24, 33, 0.9); 
+                color: #34d399; 
+                border: 1px solid rgba(52, 211, 153, 0.3); 
             }
             .btn-pro:hover { 
-                background: rgba(43, 27, 30, 0.9); 
+                background: rgba(30, 36, 48, 0.9); 
                 color: #ffffff;
+                border-color: rgba(52, 211, 153, 0.6);
             }
             #result { 
                 margin-top: 12px; 
@@ -358,9 +366,9 @@ async def index():
                 border-radius: 10px; 
                 font-size: 0.85rem; 
                 display: none; 
-                background: rgba(22, 15, 17, 0.95); 
-                border-left: 4px solid #ef4444; 
-                border: 1px solid rgba(239, 68, 68, 0.2);
+                background: rgba(14, 18, 26, 0.95); 
+                border-left: 4px solid #38bdf8; 
+                border: 1px solid rgba(59, 130, 246, 0.2);
                 line-height: 1.5;
             }
         </style>
@@ -386,17 +394,17 @@ async def index():
                     </div>
                 </div>
                 <div id="loggedInView" style="display: none;">
-                    <p id="currentUserEmail" style="font-size: 0.8rem; color: #fca5a5; margin-bottom: 8px; word-break: break-all;"></p>
-                    <button class="btn-login" style="width: 100%; padding: 8px;" onclick="handleLogout()">Log Out</button>
+                    <p id="currentUserEmail" style="font-size: 0.8rem; color: #38bdf8; margin-bottom: 8px; word-break: break-all;"></p>
+                    <button class="btn-login" style="width: 100%; padding: 8px; background: linear-gradient(135deg, #f43f5e, #be123c);" onclick="handleLogout()">Log Out</button>
                 </div>
                 <div id="authStatus"></div>
             </div>
 
-            <!-- History Section Down Below (Visible only for Paid / Pro Users) -->
+            <!-- History Section Down Below -->
             <div class="history-container">
                 <div class="history-title">Analysis History (<span id="historyCount">0</span>)</div>
                 <div id="historyList" class="history-list">
-                    <p style="font-size: 0.75rem; color: #64748b;">Upgrade to Pro to view analysis history.</p>
+                    <p style="font-size: 0.75rem; color: #64748b;">No analyses yet.</p>
                 </div>
             </div>
         </div>
@@ -445,7 +453,7 @@ async def index():
                     countEl.innerText = data.history.length;
                     
                     if (data.history.length === 0) {
-                        listEl.innerHTML = '<p style="font-size: 0.75rem; color: #64748b;">Upgrade to Pro to view analysis history.</p>';
+                        listEl.innerHTML = '<p style="font-size: 0.75rem; color: #64748b;">No analyses in history yet.</p>';
                         return;
                     }
                     
@@ -456,7 +464,7 @@ async def index():
                         div.innerHTML = `
                             <div class="history-item-header">
                                 <span>${item.date}</span>
-                                <span style="color: ${item.risk === 'CRITICAL' ? '#ef4444' : '#4ade80'}">${item.risk}</span>
+                                <span style="color: ${item.risk === 'CRITICAL' ? '#f43f5e' : '#34d399'}">${item.risk}</span>
                             </div>
                             <div class="history-item-snippet">${item.snippet}</div>
                         `;
@@ -491,7 +499,7 @@ async def index():
                     });
                     const data = await res.json();
                     if (res.ok) {
-                        statusEl.style.color = '#4ade80';
+                        statusEl.style.color = '#34d399';
                         statusEl.innerText = data.message;
                         setTimeout(() => { 
                             checkSession();
@@ -499,11 +507,11 @@ async def index():
                             statusEl.innerText = '';
                         }, 1000);
                     } else {
-                        statusEl.style.color = '#ef4444';
+                        statusEl.style.color = '#f43f5e';
                         statusEl.innerText = data.detail || 'Authentication failed';
                     }
                 } catch (err) {
-                    statusEl.style.color = '#ef4444';
+                    statusEl.style.color = '#f43f5e';
                     statusEl.innerText = 'Network error during auth';
                 }
             }
@@ -553,10 +561,10 @@ async def index():
                     if (res.ok) {
                         resDiv.innerHTML = `<strong>Status:</strong> Success<br><strong>Trials Used:</strong> ${data.trials_used}<br><br><strong>Risk Score:</strong> ${data.analysis.risk_score}<br><strong>Details:</strong> ${data.analysis.details}`;
                     } else {
-                        resDiv.innerHTML = `<span style="color: #ef4444;">${data.detail}</span><br><br><button class="action-btn btn-pro" onclick="upgradeAccount()">Upgrade to Pro (Remove Limits)</button>`;
+                        resDiv.innerHTML = `<span style="color: #f43f5e;">${data.detail}</span><br><br><button class="action-btn btn-pro" onclick="upgradeAccount()">Upgrade to Pro (Remove Limits)</button>`;
                     }
                 } catch (err) {
-                    resDiv.innerHTML = `<span style="color: #ef4444;">Error connecting to server.</span>`;
+                    resDiv.innerHTML = `<span style="color: #f43f5e;">Error connecting to server.</span>`;
                 }
             }
 
@@ -607,22 +615,27 @@ async def session_info(request: Request):
 @app.get("/history")
 async def get_history(request: Request):
     user_email = request.session.get("user")
-    if not user_email:
-        return {"history": []}
+    identifier = user_email if user_email else request.client.host
     
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
-    cursor.execute("SELECT is_paid FROM users WHERE email = ?", (user_email,))
-    row = cursor.fetchone()
     
-    # If the user has not paid, do not return history items
-    if not row or row[0] != 1:
-        conn.close()
-        return {"history": []}
-    
-    cursor.execute("SELECT date, snippet, full_text, risk, details FROM history WHERE identifier = ? ORDER BY id DESC", (user_email,))
+    is_paid = 0
+    if user_email:
+        cursor.execute("SELECT is_paid FROM users WHERE email = ?", (user_email,))
+        row = cursor.fetchone()
+        if row and row[0] == 1:
+            is_paid = 1
+            
+    cursor.execute("SELECT date, snippet, full_text, risk, details FROM history WHERE identifier = ? ORDER BY id ASC", (identifier,))
     rows = cursor.fetchall()
     conn.close()
+    
+    # If not paid, show only the first 3 free trials. If paid, show all history items (newest first or ordered).
+    if not is_paid:
+        rows = rows[:3]
+    else:
+        rows = list(reversed(rows))
     
     history_list = []
     for row in rows:
