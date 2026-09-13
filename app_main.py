@@ -58,45 +58,196 @@ async def index():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>AuditGuard AI</title>
+        <title>AuditGuard AI - Instant Contract Risk Analysis</title>
         <link rel="manifest" href="/manifest.json">
-        <meta name="theme-color" content="#20b8f5">
+        <meta name="theme-color" content="#07090e">
         <meta name="mobile-web-app-capable" content="yes">
         <style>
-            body { font-family: sans-serif; background: #07090e; color: #f8fafc; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 16px; box-sizing: border-box; }
-            .card { width: 100%; max-width: 450px; background: #0f1423; padding: 24px; border-radius: 16px; border: 1px solid #1e263c; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); box-sizing: border-box; }
-            .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-            h1 { font-size: 1.25rem; font-weight: bold; margin: 0; color: #ffffff; }
-            .auth-toggle-btn { font-size: 0.75rem; color: #818cf8; background: none; border: none; cursor: pointer; font-weight: 500; padding: 0; }
-            .auth-toggle-btn:hover { color: #a5b4fc; }
-            .auth-box { display: none; background: #131929; border: 1px solid #232d4a; border-radius: 12px; padding: 14px; margin-bottom: 20px; }
-            .auth-box input { width: 100%; padding: 10px; background: #07090e; border: 1px solid #2a3759; border-radius: 8px; color: #f8fafc; font-size: 0.85rem; margin-bottom: 10px; box-sizing: border-box; outline: none; }
-            .auth-row { display: flex; gap: 8px; }
-            .auth-row button { flex: 1; padding: 8px; border-radius: 8px; font-size: 0.75rem; font-weight: bold; cursor: pointer; border: none; }
+            * { box-sizing: border-box; }
+            body { 
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+                background: radial-gradient(circle at 50% 0%, #171f38 0%, #07090e 70%); 
+                color: #f8fafc; 
+                display: flex; 
+                justify-content: center; 
+                align-items: center; 
+                min-height: 100vh; 
+                margin: 0; 
+                padding: 16px; 
+            }
+            .card { 
+                width: 100%; 
+                max-width: 480px; 
+                background: rgba(15, 20, 35, 0.85); 
+                backdrop-filter: blur(12px);
+                padding: 28px; 
+                border-radius: 20px; 
+                border: 1px solid rgba(255, 255, 255, 0.08); 
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); 
+            }
+            .header-row { 
+                display: flex; 
+                justify-content: space-between; 
+                align-items: center; 
+                margin-bottom: 22px; 
+                border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+                padding-bottom: 14px;
+            }
+            .logo-container {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            h1 { 
+                font-size: 1.2rem; 
+                font-weight: 700; 
+                margin: 0; 
+                background: linear-gradient(135deg, #ffffff 30%, #94a3b8 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                letter-spacing: -0.02em;
+            }
+            .auth-toggle-btn { 
+                font-size: 0.75rem; 
+                color: #818cf8; 
+                background: rgba(129, 140, 248, 0.1); 
+                border: 1px solid rgba(129, 140, 248, 0.2); 
+                padding: 6px 12px;
+                border-radius: 20px;
+                cursor: pointer; 
+                font-weight: 600; 
+                transition: all 0.2s ease;
+            }
+            .auth-toggle-btn:hover { 
+                background: rgba(129, 140, 248, 0.2); 
+                color: #a5b4fc;
+            }
+            .auth-box { 
+                display: none; 
+                background: rgba(19, 25, 41, 0.95); 
+                border: 1px solid rgba(129, 140, 248, 0.2); 
+                border-radius: 14px; 
+                padding: 16px; 
+                margin-bottom: 20px; 
+                animation: fadeIn 0.2s ease-in-out;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(-6px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            .auth-box input { 
+                width: 100%; 
+                padding: 11px 14px; 
+                background: #07090e; 
+                border: 1px solid #2a3759; 
+                border-radius: 10px; 
+                color: #f8fafc; 
+                font-size: 0.85rem; 
+                margin-bottom: 10px; 
+                outline: none; 
+                transition: border-color 0.2s;
+            }
+            .auth-box input:focus {
+                border-color: #6366f1;
+            }
+            .auth-row { 
+                display: flex; 
+                gap: 8px; 
+            }
+            .auth-row button { 
+                flex: 1; 
+                padding: 9px; 
+                border-radius: 9px; 
+                font-size: 0.75rem; 
+                font-weight: 600; 
+                cursor: pointer; 
+                border: none; 
+                transition: opacity 0.2s;
+            }
+            .auth-row button:hover { opacity: 0.9; }
             .btn-signup { background: #334155; color: white; }
-            .btn-login { background: #4f46e5; color: white; }
-            #authStatus { font-size: 0.75rem; margin-top: 8px; text-align: center; }
-            p { font-size: 0.8rem; color: #94a3b8; margin-bottom: 10px; margin-top: 0; }
-            textarea { width: 100%; height: 150px; background: #131929; color: #f8fafc; border: 1px solid #232d4a; border-radius: 12px; padding: 12px; box-sizing: border-box; font-size: 0.875rem; resize: none; outline: none; margin-bottom: 12px; }
-            textarea::placeholder { color: #64748b; }
-            button { width: 100%; padding: 12px; border-radius: 12px; font-weight: bold; font-size: 0.875rem; cursor: pointer; border: none; margin-bottom: 10px; transition: background 0.2s; box-sizing: border-box; }
-            .btn-analyze { background: #4f46e5; color: white; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); }
-            .btn-analyze:hover { background: #4338ca; }
-            .btn-pro { background: #182136; color: #cbd5e1; border: 1px solid #2a3759; font-weight: 500; }
-            .btn-pro:hover { background: #202b47; }
-            #result { margin-top: 15px; padding: 12px; border-radius: 8px; font-size: 0.85rem; display: none; background: #131929; border-left: 4px solid #4f46e5; }
+            .btn-login { background: #6366f1; color: white; }
+            #authStatus { font-size: 0.75rem; margin-top: 8px; text-align: center; font-weight: 500; }
+            .instruction-text { 
+                font-size: 0.825rem; 
+                color: #94a3b8; 
+                margin-bottom: 10px; 
+                font-weight: 400; 
+            }
+            textarea { 
+                width: 100%; 
+                height: 160px; 
+                background: rgba(10, 14, 26, 0.8); 
+                color: #f8fafc; 
+                border: 1px solid #232d4a; 
+                border-radius: 14px; 
+                padding: 14px; 
+                font-size: 0.875rem; 
+                resize: none; 
+                outline: none; 
+                margin-bottom: 16px; 
+                transition: all 0.2s;
+            }
+            textarea:focus { 
+                border-color: #6366f1; 
+                box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+            }
+            textarea::placeholder { color: #475569; }
+            button.action-btn { 
+                width: 100%; 
+                padding: 13px; 
+                border-radius: 12px; 
+                font-weight: 600; 
+                font-size: 0.875rem; 
+                cursor: pointer; 
+                border: none; 
+                margin-bottom: 12px; 
+                transition: all 0.2s ease; 
+            }
+            .btn-analyze { 
+                background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); 
+                color: white; 
+                box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4); 
+            }
+            .btn-analyze:hover { 
+                transform: translateY(-1px);
+                box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6); 
+            }
+            .btn-pro { 
+                background: rgba(24, 33, 54, 0.6); 
+                color: #cbd5e1; 
+                border: 1px solid rgba(42, 55, 89, 0.8); 
+            }
+            .btn-pro:hover { 
+                background: rgba(32, 43, 71, 0.8); 
+                color: #ffffff;
+                border-color: #4f46e5;
+            }
+            #result { 
+                margin-top: 16px; 
+                padding: 14px; 
+                border-radius: 12px; 
+                font-size: 0.85rem; 
+                display: none; 
+                background: rgba(19, 25, 41, 0.9); 
+                border-left: 4px solid #6366f1; 
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                line-height: 1.5;
+            }
         </style>
     </head>
     <body>
         <div class="card">
             <div class="header-row">
-                <h1>AuditGuard AI</h1>
+                <div class="logo-container">
+                    <h1>AuditGuard AI</h1>
+                </div>
                 <button class="auth-toggle-btn" onclick="toggleAuthBox()">Log In / Sign Up</button>
             </div>
 
             <!-- Collapsible Auth Section -->
             <div id="authBox" class="auth-box">
-                <p style="margin-bottom: 8px; color: #cbd5e1;">Account Access (Sync across devices)</p>
+                <p style="margin-bottom: 8px; color: #cbd5e1; font-size: 0.8rem; font-weight: 500;">Account Access (Sync across devices)</p>
                 <input type="email" id="authEmail" placeholder="Enter email...">
                 <input type="password" id="authPassword" placeholder="Enter password...">
                 <div class="auth-row">
@@ -108,11 +259,11 @@ async def index():
 
             <!-- Main Contract Analysis Workspace -->
             <div>
-                <p>Paste your contract text below for an instant risk evaluation.</p>
+                <p class="instruction-text">Paste your contract text below for an instant risk evaluation.</p>
                 <textarea id="contractInput" placeholder="Paste contract text here..."></textarea>
             </div>
-            <button class="btn-analyze" onclick="submitAudit()">Analyze Contract</button>
-            <button class="btn-pro" onclick="upgradeAccount()">Upgrade to Pro (Remove Limits)</button>
+            <button class="action-btn btn-analyze" onclick="submitAudit()">Analyze Contract</button>
+            <button class="action-btn btn-pro" onclick="upgradeAccount()">Upgrade to Pro (Remove Limits)</button>
             <div id="result"></div>
         </div>
 
@@ -168,7 +319,7 @@ async def index():
                     if (res.ok) {
                         resDiv.innerHTML = `<strong>Status:</strong> Success<br><strong>Trials Used:</strong> ${data.trials_used}<br><br><strong>Risk Score:</strong> ${data.analysis.risk_score}<br><strong>Details:</strong> ${data.analysis.details}`;
                     } else {
-                        resDiv.innerHTML = `<span style="color: #ef4444;">${data.detail}</span><br><br><button class="btn-pro" onclick="upgradeAccount()">Upgrade to Pro (Remove Limits)</button>`;
+                        resDiv.innerHTML = `<span style="color: #ef4444;">${data.detail}</span><br><br><button class="action-btn btn-pro" onclick="upgradeAccount()">Upgrade to Pro (Remove Limits)</button>`;
                     }
                 } catch (err) {
                     resDiv.innerHTML = `<span style="color: #ef4444;">Error connecting to server.</span>`;
@@ -268,7 +419,6 @@ async def audit_contract(request: Request, response: Response, contract: Contrac
 async def upgrade(request: Request):
     user_email = request.session.get("user")
     
-    # Enforce sign-up / login before permitting payment initialization
     if not user_email or user_email not in USERS_DB:
         raise HTTPException(
             status_code=401,
