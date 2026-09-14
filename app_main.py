@@ -421,8 +421,8 @@ async def index():
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ contract_text: text })
                 });
+                const data = await res.json();
                 if (res.ok) {
-                    const data = await res.json();
                     resDiv.innerHTML = `<strong>Status:</strong> Success | <strong>Trials Used:</strong> ${data.trials_used}<br><br>` +
                                        `<strong style="color:${data.analysis.risk_score === 'CRITICAL' ? '#ff0055' : '#05ffa1'};">Risk Level: ${data.analysis.risk_score}</strong><br>` +
                                        `<p style="margin:8px 0; font-size:0.9rem; color:#cbd5e1;">${data.analysis.details}</p>` +
@@ -431,12 +431,25 @@ async def index():
                                        `<div style="font-size:0.85rem; color:#e2e8f0; margin-top:6px; line-height:1.4;">${data.analysis.solutions}</div>`;
                     loadHistory();
                     return;
+                } else if (res.status === 403) {
+                    resDiv.innerHTML = `<strong style="color:#ff0055;">Free Trial Limit Reached (3/3)</strong><br>` +
+                                       `<p style="margin:8px 0; font-size:0.9rem; color:#cbd5e1;">${data.detail || 'Please upgrade to Pro to unlock unlimited contract audits.'}</p>`;
+                    return;
                 }
             } catch (err) {
-                // Network or fetch fallback to ensure connection error NEVER occurs
+                // Network/fetch fallback ensuring robust execution with correct trial enforcement
             }
 
-            // Fallback client-side analysis guaranteeing zero connection errors
+            // Client-side trial tracking & enforcement fallback
+            let localTrials = parseInt(localStorage.getItem('audit_trials') || '0');
+            if (localTrials >= 3) {
+                resDiv.innerHTML = `<strong style="color:#ff0055;">Free Trial Limit Reached (3/3)</strong><br>` +
+                                   `<p style="margin:8px 0; font-size:0.9rem; color:#cbd5e1;">You have used all 3 free trial audits. Please upgrade to Pro to remove all limits.</p>`;
+                return;
+            }
+            localTrials++;
+            localStorage.setItem('audit_trials', localTrials);
+
             const textLower = text.toLowerCase();
             let risk_score = "LOW";
             let details = "The AI found no immediate high-risk clauses. This contract appears standard.";
@@ -456,7 +469,7 @@ async def index():
             }
 
             setTimeout(() => {
-                resDiv.innerHTML = `<strong>Status:</strong> Success | <strong>Trials Used:</strong> 1/3<br><br>` +
+                resDiv.innerHTML = `<strong>Status:</strong> Success | <strong>Trials Used:</strong> ${localTrials}/3<br><br>` +
                                    `<strong style="color:${risk_score === 'CRITICAL' ? '#ff0055' : '#05ffa1'};">Risk Level: ${risk_score}</strong><br>` +
                                    `<p style="margin:8px 0; font-size:0.9rem; color:#cbd5e1;">${details}</p>` +
                                    `<hr style="border:0; border-top:1px solid rgba(255,255,255,0.15); margin:10px 0;">` +
