@@ -31,7 +31,6 @@ def init_db():
         )
     """)
     
-    # Safe check in case table already existed without trials_used
     cursor.execute("PRAGMA table_info(users);")
     user_columns = [col[1] for col in cursor.fetchall()]
     if "trials_used" not in user_columns:
@@ -50,7 +49,6 @@ def init_db():
         )
     """)
     
-    # Safe check in case history table existed without solutions
     cursor.execute("PRAGMA table_info(history);")
     history_columns = [col[1] for col in cursor.fetchall()]
     if "solutions" not in history_columns:
@@ -112,43 +110,43 @@ async def index():
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Audit Guard AI - Premium Contract Risk Analysis</title>
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#07080c">
+    <meta name="theme-color" content="#070a14">
     <meta name="mobile-web-app-capable" content="yes">
     <style>
         * { box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background: #07080c radial-gradient(circle at 15% 15%, rgba(244, 63, 94, 0.15) 0%, transparent 40%),
-                        radial-gradient(circle at 85% 85%, rgba(59, 130, 246, 0.15) 0%, transparent 40%),
-                        radial-gradient(circle at 50% 85%, rgba(16, 185, 129, 0.12) 0%, transparent 50%);
+            background: #070a14 radial-gradient(circle at 15% 15%, rgba(16, 185, 129, 0.14) 0%, transparent 45%),
+                        radial-gradient(circle at 85% 20%, rgba(56, 189, 248, 0.16) 0%, transparent 45%),
+                        radial-gradient(circle at 50% 90%, rgba(244, 63, 94, 0.12) 0%, transparent 50%);
             color: #f8fafc;
             display: flex;
             flex-direction: column;
             min-height: 100vh;
             margin: 0;
-            padding: 16px;
+            padding: 12px;
         }
         .app-container {
             width: 100%;
-            max-width: 600px;
+            max-width: 650px;
             margin: 0 auto;
             flex: 1;
             display: flex;
             flex-direction: column;
-            background: rgba(13, 13, 18, 0.85);
-            backdrop-filter: blur(16px);
-            padding: 24px;
+            background: rgba(13, 17, 28, 0.88);
+            backdrop-filter: blur(20px);
+            padding: 20px;
             border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 25px rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.7), 0 0 30px rgba(56, 189, 248, 0.1);
         }
         .header-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 14px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            padding-bottom: 14px;
+            padding-bottom: 12px;
         }
         .header-left {
             display: flex;
@@ -156,7 +154,7 @@ async def index():
             gap: 12px;
         }
         .menu-btn {
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(244, 63, 94, 0.2));
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(16, 185, 129, 0.2));
             border: 1px solid rgba(255, 255, 255, 0.15);
             color: #f8fafc;
             font-size: 1.2rem;
@@ -170,11 +168,11 @@ async def index():
         }
         .menu-btn:hover {
             transform: scale(1.05);
-            border-color: rgba(59, 130, 246, 0.5);
-            box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+            border-color: rgba(56, 189, 248, 0.5);
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
         }
         h1 {
-            font-size: 1.4rem;
+            font-size: 1.35rem;
             font-weight: 800;
             margin: 0;
             background: linear-gradient(135deg, #38bdf8 0%, #34d399 50%, #f43f5e 100%);
@@ -183,24 +181,24 @@ async def index():
             letter-spacing: -0.02em;
         }
         p.subtitle {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             color: #94a3b8;
             margin-top: 0;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
             line-height: 1.4;
         }
         .sample-buttons {
             display: flex;
             gap: 10px;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
         .sample-btn {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.12);
             color: #38bdf8;
-            padding: 8px 12px;
+            padding: 6px 10px;
             border-radius: 8px;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             cursor: pointer;
             font-weight: 600;
             transition: all 0.2s;
@@ -211,21 +209,30 @@ async def index():
         }
         textarea {
             width: 100%;
-            height: 150px;
-            background: #050508;
+            flex: 1;
+            min-height: 280px;
+            background: #05070d;
             border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 12px;
+            border-radius: 14px;
             color: #f8fafc;
-            padding: 14px;
+            padding: 16px;
             font-size: 0.95rem;
             resize: vertical;
-            margin-bottom: 16px;
+            margin-bottom: 20px;
             outline: none;
+            line-height: 1.5;
             transition: border-color 0.2s, box-shadow 0.2s;
         }
         textarea:focus {
             border-color: #38bdf8;
             box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+        }
+        .button-group {
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-bottom: 8px;
         }
         .action-btn {
             width: 100%;
@@ -239,7 +246,6 @@ async def index():
             cursor: pointer;
             box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
             transition: all 0.2s ease;
-            margin-bottom: 12px;
         }
         .action-btn:hover {
             transform: translateY(-2px);
@@ -253,7 +259,7 @@ async def index():
             box-shadow: 0 12px 25px rgba(244, 63, 94, 0.6);
         }
         .result-box {
-            background: rgba(20, 20, 30, 0.9);
+            background: rgba(20, 25, 40, 0.95);
             border: 1px solid rgba(255, 255, 255, 0.12);
             border-radius: 12px;
             padding: 16px;
@@ -267,13 +273,13 @@ async def index():
         /* Sidebar styles */
         .sidebar-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(6px);
+            background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(6px);
             z-index: 999; display: none; opacity: 0; transition: opacity 0.3s ease;
         }
         .sidebar-overlay.active { display: block; opacity: 1; }
         .sidebar {
             position: fixed; top: 0; left: -320px; width: 320px; height: 100%;
-            background: #0b0c14; border-right: 1px solid rgba(59, 130, 246, 0.3);
+            background: #0b0f19; border-right: 1px solid rgba(56, 189, 248, 0.3);
             z-index: 1000; display: flex; flex-direction: column;
             transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: 10px 0 30px rgba(0,0,0,0.8); padding: 20px; overflow-y: auto;
@@ -290,7 +296,7 @@ async def index():
             border-radius: 12px; padding: 14px; margin-bottom: 20px;
         }
         .profile-section input {
-            width: 100%; padding: 10px; background: #050508; border: 1px solid rgba(255,255,255,0.1);
+            width: 100%; padding: 10px; background: #05070d; border: 1px solid rgba(255,255,255,0.1);
             border-radius: 8px; color: #fff; font-size: 0.85rem; margin-bottom: 8px; outline: none;
         }
         .profile-row { display: flex; gap: 8px; margin-top: 8px; }
@@ -303,9 +309,13 @@ async def index():
             background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);
             border-radius: 10px; padding: 12px; margin-bottom: 10px; cursor: pointer; transition: all 0.2s;
         }
-        .history-item:hover { background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3); }
+        .history-item:hover { background: rgba(56, 189, 248, 0.1); border-color: rgba(56, 189, 248, 0.3); }
         .history-item-header { display: flex; justify-content: space-between; font-size: 0.75rem; color: #94a3b8; margin-bottom: 4px; }
         .history-item-snippet { font-size: 0.85rem; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .upgrade-prompt-box {
+            background: rgba(244, 63, 94, 0.1); border: 1px dashed rgba(244, 63, 94, 0.4);
+            border-radius: 10px; padding: 12px; text-align: center; margin-top: 15px; font-size: 0.8rem; color: #fda4af;
+        }
     </style>
 </head>
 <body>
@@ -333,7 +343,7 @@ async def index():
             <p id="authStatus" style="font-size: 0.8rem; margin: 8px 0 0 0; color: #f43f5e;"></p>
         </div>
 
-        <h3 style="font-size: 0.9rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-top:0;">Past Audits</h3>
+        <h3 style="font-size: 0.9rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-top:0;">Contract History</h3>
         <div id="historyList">Loading history...</div>
     </div>
 
@@ -343,20 +353,21 @@ async def index():
                 <button class="menu-btn" onclick="toggleSidebar()">&#9776;</button>
                 <h1>Audit Guard AI</h1>
             </div>
-            <div id="userStatusText" style="font-size: 0.75rem; background: rgba(56,189,248,0.1); color: #38bdf8; padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(56,189,248,0.3);">Free Mode</div>
         </div>
 
-        <p class="subtitle">Paste your contract or compliance agreement below for an instant enterprise-grade risk evaluation.</p>
+        <p class="subtitle">Paste your large contract or compliance agreement below for a comprehensive reading and risk analysis workspace.</p>
 
         <div class="sample-buttons">
             <button class="sample-btn" onclick="loadSample('nda')">Load Sample NDA</button>
             <button class="sample-btn" onclick="loadSample('msa')">Load Sample MSA</button>
         </div>
 
-        <textarea id="contractInput" placeholder="Paste your legal agreement or contract text here..."></textarea>
+        <textarea id="contractInput" placeholder="Paste your legal agreement or contract text here (fully scrollable & large for easy reading)..."></textarea>
 
-        <button class="action-btn" onclick="submitAudit()">Analyze Contract & Find Solutions</button>
-        <button class="action-btn upgrade-btn" onclick="upgradeAccount()">Upgrade to Pro (Remove Limits)</button>
+        <div class="button-group">
+            <button class="action-btn" onclick="submitAudit()">Analyze Contract & Find Solutions</button>
+            <button class="action-btn upgrade-btn" onclick="upgradeAccount()">Upgrade to Pro (Remove Limits)</button>
+        </div>
 
         <div id="result" class="result-box"></div>
     </div>
@@ -384,11 +395,9 @@ async def index():
                     document.getElementById('authInputs').style.display = 'none';
                     document.getElementById('loggedInView').style.display = 'block';
                     document.getElementById('currentUserEmail').innerText = data.email;
-                    document.getElementById('userStatusText').innerText = "Signed In Profile";
                 } else {
                     document.getElementById('authInputs').style.display = 'block';
                     document.getElementById('loggedInView').style.display = 'none';
-                    document.getElementById('userStatusText').innerText = "Account / Free";
                 }
             } catch (err) {
                 console.error("Session check failed");
@@ -520,6 +529,13 @@ async def index():
                     };
                     listEl.appendChild(div);
                 });
+                
+                if (data.is_limited) {
+                    const promptBox = document.createElement('div');
+                    promptBox.className = 'upgrade-prompt-box';
+                    promptBox.innerHTML = 'Showing recent 3 trial audits. Upgrade to Pro via Paystack to unlock full unlimited audit history vault.';
+                    listEl.appendChild(promptBox);
+                }
             } catch (err) {
                 console.error('Failed to load history');
             }
@@ -565,8 +581,10 @@ async def get_history(request: Request):
     rows = cursor.fetchall()
     conn.close()
 
-    if not is_paid:
+    is_limited = False
+    if not is_paid and len(rows) > 3:
         rows = rows[:3]
+        is_limited = True
 
     history_list = []
     for row in rows:
@@ -578,7 +596,7 @@ async def get_history(request: Request):
             "details": row[4],
             "solutions": row[5]
         })
-    return {"history": history_list}
+    return {"history": history_list, "is_limited": is_limited}
 
 @app.post("/signup")
 async def signup(request: Request, email: str = Form(...), password: str = Form(...)):
@@ -614,7 +632,7 @@ async def login(request: Request, email: str = Form(...), password: str = Form(.
 @app.post("/logout")
 async def logout(request: Request):
     request.session.pop("user", None)
-    return {"message": "Logged out successfully"}
+    return {"message": "Logged in successfully"}
 
 @app.post("/audit")
 async def audit_contract(request: Request, response: Response, contract: ContractRequest):
@@ -655,7 +673,6 @@ async def audit_contract(request: Request, response: Response, contract: Contrac
                     "analysis": analysis
                 }
     else:
-        # Anonymous user trial tracking via cookies
         trials_cookie = request.cookies.get("trials", "0")
         try:
             trials = int(trials_cookie)
