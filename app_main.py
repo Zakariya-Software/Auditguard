@@ -110,15 +110,14 @@ async def index():
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Audit Guard AI - Premium Contract Risk Analysis</title>
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#04060b">
+    <meta name="theme-color" content="#0a050f">
     <meta name="mobile-web-app-capable" content="yes">
     <style>
         * { box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background: #04060b radial-gradient(circle at 10% 20%, rgba(244, 63, 94, 0.22) 0%, transparent 45%),
-                        radial-gradient(circle at 90% 20%, rgba(16, 185, 129, 0.22) 0%, transparent 45%),
-                        radial-gradient(circle at 50% 85%, rgba(59, 130, 246, 0.25) 0%, transparent 55%);
+            background: linear-gradient(135deg, rgba(255, 0, 85, 0.35) 0%, rgba(0, 255, 136, 0.35) 50%, rgba(0, 102, 255, 0.35) 100%), #050508;
+            background-blend-mode: overlay;
             color: #f8fafc;
             display: flex;
             flex-direction: column;
@@ -129,13 +128,14 @@ async def index():
             overflow: hidden;
         }
         .app-container {
-            width: 100%;
-            height: 100%;
+            width: 100vw;
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            background: rgba(6, 9, 18, 0.88);
-            backdrop-filter: blur(24px);
+            background: rgba(8, 10, 18, 0.85);
+            backdrop-filter: blur(20px);
             padding: 16px;
+            margin: 0;
             border: none;
             border-radius: 0;
             box-shadow: none;
@@ -146,7 +146,7 @@ async def index():
             justify-content: space-between;
             align-items: center;
             margin-bottom: 12px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
             padding-bottom: 10px;
         }
         .header-left {
@@ -155,8 +155,8 @@ async def index():
             gap: 12px;
         }
         .menu-btn {
-            background: linear-gradient(135deg, rgba(244, 63, 94, 0.25), rgba(16, 185, 129, 0.25), rgba(59, 130, 246, 0.25));
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: linear-gradient(135deg, rgba(255, 0, 85, 0.3), rgba(0, 255, 136, 0.3), rgba(0, 102, 255, 0.3));
+            border: 1px solid rgba(255, 255, 255, 0.3);
             color: #f8fafc;
             font-size: 1.25rem;
             cursor: pointer;
@@ -169,21 +169,21 @@ async def index():
         }
         .menu-btn:hover {
             transform: scale(1.05);
-            border-color: rgba(59, 130, 246, 0.6);
-            box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+            border-color: rgba(0, 255, 136, 0.8);
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
         }
         h1 {
             font-size: 1.35rem;
             font-weight: 800;
             margin: 0;
-            background: linear-gradient(135deg, #f43f5e 0%, #34d399 50%, #38bdf8 100%);
+            background: linear-gradient(135deg, #ff2a6d 0%, #05ffa1 50%, #00bfff 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             letter-spacing: -0.02em;
         }
         p.subtitle {
             font-size: 0.82rem;
-            color: #94a3b8;
+            color: #cbd5e1;
             margin-top: 0;
             margin-bottom: 10px;
             line-height: 1.35;
@@ -194,10 +194,10 @@ async def index():
             margin-bottom: 10px;
         }
         .sample-btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            color: #38bdf8;
-            padding: 5px 10px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #05ffa1;
+            padding: 6px 12px;
             border-radius: 8px;
             font-size: 0.75rem;
             cursor: pointer;
@@ -205,15 +205,15 @@ async def index():
             transition: all 0.2s;
         }
         .sample-btn:hover {
-            background: rgba(56, 189, 248, 0.15);
-            border-color: #38bdf8;
+            background: rgba(5, 255, 161, 0.2);
+            border-color: #05ffa1;
         }
         textarea {
             width: 100%;
             flex: 1;
             min-height: 320px;
             background: #030408;
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 14px;
             color: #f8fafc;
             padding: 16px;
@@ -225,8 +225,8 @@ async def index():
             transition: border-color 0.2s, box-shadow 0.2s;
         }
         textarea:focus {
-            border-color: #38bdf8;
-            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+            border-color: #05ffa1;
+            box-shadow: 0 0 0 3px rgba(5, 255, 161, 0.25);
         }
         .button-group {
             margin-top: auto;
@@ -237,7 +237,7 @@ async def index():
         }
         .action-btn {
             width: 100%;
-            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            background: linear-gradient(135deg, #0066ff 0%, #0040aa 100%);
             color: white;
             border: none;
             padding: 14px;
@@ -245,23 +245,23 @@ async def index():
             font-size: 1rem;
             font-weight: 700;
             cursor: pointer;
-            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+            box-shadow: 0 8px 20px rgba(0, 102, 255, 0.4);
             transition: all 0.2s ease;
         }
         .action-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 12px 25px rgba(59, 130, 246, 0.6);
+            box-shadow: 0 12px 25px rgba(0, 102, 255, 0.6);
         }
         .upgrade-btn {
-            background: linear-gradient(135deg, #f43f5e 0%, #be123c 100%);
-            box-shadow: 0 8px 20px rgba(244, 63, 94, 0.4);
+            background: linear-gradient(135deg, #ff0055 0%, #aa0033 100%);
+            box-shadow: 0 8px 20px rgba(255, 0, 85, 0.4);
         }
         .upgrade-btn:hover {
-            box-shadow: 0 12px 25px rgba(244, 63, 94, 0.6);
+            box-shadow: 0 12px 25px rgba(255, 0, 85, 0.6);
         }
         .result-box {
-            background: rgba(15, 20, 32, 0.95);
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(12, 16, 28, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.15);
             border-radius: 12px;
             padding: 16px;
             margin-top: 14px;
@@ -274,48 +274,48 @@ async def index():
         /* Sidebar styles */
         .sidebar-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(6px);
+            background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(6px);
             z-index: 999; display: none; opacity: 0; transition: opacity 0.3s ease;
         }
         .sidebar-overlay.active { display: block; opacity: 1; }
         .sidebar {
             position: fixed; top: 0; left: -320px; width: 320px; height: 100%;
-            background: #070a14; border-right: 1px solid rgba(59, 130, 246, 0.3);
+            background: #070a14; border-right: 1px solid rgba(0, 255, 136, 0.3);
             z-index: 1000; display: flex; flex-direction: column;
             transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 10px 0 30px rgba(0,0,0,0.8); padding: 20px; overflow-y: auto;
+            box-shadow: 10px 0 30px rgba(0,0,0,0.9); padding: 20px; overflow-y: auto;
         }
         .sidebar.active { left: 0; }
         .sidebar-header {
             display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px;
+            margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px;
         }
-        .sidebar-header h2 { font-size: 1.1rem; margin: 0; color: #38bdf8; }
-        .close-sidebar { background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer; }
+        .sidebar-header h2 { font-size: 1.1rem; margin: 0; color: #05ffa1; }
+        .close-sidebar { background: none; border: none; color: #cbd5e1; font-size: 1.5rem; cursor: pointer; }
         .profile-section {
-            background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 12px; padding: 14px; margin-bottom: 20px;
         }
         .profile-section input {
-            width: 100%; padding: 10px; background: #030408; border: 1px solid rgba(255,255,255,0.1);
+            width: 100%; padding: 10px; background: #030408; border: 1px solid rgba(255,255,255,0.15);
             border-radius: 8px; color: #fff; font-size: 0.85rem; margin-bottom: 8px; outline: none;
         }
         .profile-row { display: flex; gap: 8px; margin-top: 8px; }
         .profile-row button {
             flex: 1; padding: 8px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; font-size: 0.8rem;
         }
-        .btn-primary { background: #3b82f6; color: #fff; }
-        .btn-secondary { background: rgba(255,255,255,0.1); color: #fff; }
+        .btn-primary { background: #0066ff; color: #fff; }
+        .btn-secondary { background: rgba(255,255,255,0.12); color: #fff; }
         .history-item {
-            background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
             border-radius: 10px; padding: 12px; margin-bottom: 10px; cursor: pointer; transition: all 0.2s;
         }
-        .history-item:hover { background: rgba(56, 189, 248, 0.1); border-color: rgba(56, 189, 248, 0.3); }
+        .history-item:hover { background: rgba(5, 255, 161, 0.1); border-color: rgba(5, 255, 161, 0.3); }
         .history-item-header { display: flex; justify-content: space-between; font-size: 0.75rem; color: #94a3b8; margin-bottom: 4px; }
         .history-item-snippet { font-size: 0.85rem; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .upgrade-prompt-box {
-            background: rgba(244, 63, 94, 0.1); border: 1px dashed rgba(244, 63, 94, 0.4);
-            border-radius: 10px; padding: 12px; text-align: center; margin-top: 15px; font-size: 0.8rem; color: #fda4af;
+            background: rgba(255, 0, 85, 0.12); border: 1px dashed rgba(255, 0, 85, 0.5);
+            border-radius: 10px; padding: 12px; text-align: center; margin-top: 15px; font-size: 0.8rem; color: #ff88aa;
         }
     </style>
 </head>
@@ -338,10 +338,10 @@ async def index():
                 </div>
             </div>
             <div id="loggedInView" style="display:none;">
-                <p id="currentUserEmail" style="font-size:0.85rem; color:#34d399; margin:0 0 10px 0; font-weight:600;"></p>
+                <p id="currentUserEmail" style="font-size:0.85rem; color:#05ffa1; margin:0 0 10px 0; font-weight:600;"></p>
                 <button class="btn-secondary" style="width:100%; padding:8px;" onclick="handleLogout()">Log Out</button>
             </div>
-            <p id="authStatus" style="font-size: 0.8rem; margin: 8px 0 0 0; color: #f43f5e;"></p>
+            <p id="authStatus" style="font-size: 0.8rem; margin: 8px 0 0 0; color: #ff0055;"></p>
         </div>
 
         <h3 style="font-size: 0.9rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-top:0;">Contract History</h3>
@@ -413,7 +413,7 @@ async def index():
                 return;
             }
             resDiv.style.display = 'block';
-            resDiv.innerHTML = '<span style="color:#38bdf8;">Analyzing contract semantics and flagging risks...</span>';
+            resDiv.innerHTML = '<span style="color:#05ffa1;">Analyzing contract semantics and flagging risks...</span>';
 
             try {
                 const res = await fetch('/audit', {
@@ -424,17 +424,17 @@ async def index():
                 const data = await res.json();
                 if (res.ok) {
                     resDiv.innerHTML = `<strong>Status:</strong> Success | <strong>Trials Used:</strong> ${data.trials_used}<br><br>` +
-                                       `<strong style="color:${data.analysis.risk_score === 'CRITICAL' ? '#f43f5e' : '#34d399'};">Risk Level: ${data.analysis.risk_score}</strong><br>` +
+                                       `<strong style="color:${data.analysis.risk_score === 'CRITICAL' ? '#ff0055' : '#05ffa1'};">Risk Level: ${data.analysis.risk_score}</strong><br>` +
                                        `<p style="margin:8px 0; font-size:0.9rem; color:#cbd5e1;">${data.analysis.details}</p>` +
-                                       `<hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:10px 0;">` +
-                                       `<strong style="font-size:0.85rem; color:#38bdf8;">Remediation & Solutions:</strong><br>` +
+                                       `<hr style="border:0; border-top:1px solid rgba(255,255,255,0.15); margin:10px 0;">` +
+                                       `<strong style="font-size:0.85rem; color:#00bfff;">Remediation & Solutions:</strong><br>` +
                                        `<div style="font-size:0.85rem; color:#e2e8f0; margin-top:6px; line-height:1.4;">${data.analysis.solutions}</div>`;
                     loadHistory();
                 } else {
-                    resDiv.innerHTML = `<span style="color: #f43f5e;">${data.detail || 'Limit reached.'}</span>`;
+                    resDiv.innerHTML = `<span style="color: #ff0055;">${data.detail || 'Limit reached.'}</span>`;
                 }
             } catch (err) {
-                resDiv.innerHTML = '<span style="color: #f43f5e;">Error connecting to server. Please try again.</span>';
+                resDiv.innerHTML = '<span style="color: #ff0055;">Error connecting to server. Please try again.</span>';
             }
         }
 
@@ -455,7 +455,7 @@ async def index():
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    statusEl.style.color = '#34d399';
+                    statusEl.style.color = '#05ffa1';
                     statusEl.innerText = data.message;
                     setTimeout(() => {
                         checkSession();
@@ -463,11 +463,11 @@ async def index():
                         statusEl.innerText = '';
                     }, 1000);
                 } else {
-                    statusEl.style.color = '#f43f5e';
+                    statusEl.style.color = '#ff0055';
                     statusEl.innerText = data.detail || 'Authentication Failed';
                 }
             } catch (err) {
-                statusEl.style.color = '#f43f5e';
+                statusEl.style.color = '#ff0055';
                 statusEl.innerText = 'Network error during auth.';
             }
         }
@@ -514,7 +514,7 @@ async def index():
                     div.innerHTML = `
                         <div class="history-item-header">
                             <span>${item.date}</span>
-                            <span style="color: ${item.risk === 'CRITICAL' ? '#f43f5e' : '#34d399'}; font-weight:700;">${item.risk}</span>
+                            <span style="color: ${item.risk === 'CRITICAL' ? '#ff0055' : '#05ffa1'}; font-weight:700;">${item.risk}</span>
                         </div>
                         <div class="history-item-snippet">${item.snippet}</div>
                     `;
@@ -522,9 +522,9 @@ async def index():
                         document.getElementById('contractInput').value = item.full_text;
                         const resDiv = document.getElementById('result');
                         resDiv.style.display = 'block';
-                        resDiv.innerHTML = `<strong>Loaded From History:</strong><br><strong style="color:${item.risk === 'CRITICAL' ? '#f43f5e' : '#34d399'};">Risk Score: ${item.risk}</strong><br>` +
+                        resDiv.innerHTML = `<strong>Loaded From History:</strong><br><strong style="color:${item.risk === 'CRITICAL' ? '#ff0055' : '#05ffa1'};">Risk Score: ${item.risk}</strong><br>` +
                                            `<p style="margin:8px 0; font-size:0.9rem; color:#cbd5e1;">${item.details}</p>` +
-                                           `<hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:10px 0;">` +
+                                           `<hr style="border:0; border-top:1px solid rgba(255,255,255,0.15); margin:10px 0;">` +
                                            `<div style="font-size:0.85rem; color:#e2e8f0;">${item.solutions}</div>`;
                         toggleSidebar();
                     };
