@@ -14,7 +14,7 @@ app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET", "su
 
 # CONFIGURATION
 PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY", "")
-BASE_URL = os.getenv("BASE_URL", "https://amb-production-b7d8d.up.railway.app")
+BASE_URL = os.getenv("BASE_URL", "https://web-production-b74c4.up.railway.app")
 
 # PERSISTENT DATABASE SETUP (SQLite)
 DB_FILE = "auditguard.db"
@@ -649,38 +649,18 @@ async def logout(request: Request):
 @app.post("/audit")
 async def audit_contract(request: Request, response: Response, contract: ContractRequest):
     user_email = request.session.get("user")
-    analysis = analyze_contract_liability(contract.contract_text)
-
-    date_str = datetime.now().strftime("%b %d, %H:%M")
-    snippet = contract.contract_text[:60] + "..." if len(contract.contract_text) > 60 else contract.contract_text
-    identifier = user_email if user_email else request.client.host
 
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
-    cursor.execute(
-        "INSERT INTO history (identifier, date, snippet, full_text, risk, details, solutions) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (identifier, date_str, snippet, contract.contract_text, analysis["risk_score"], analysis["details"], analysis["solutions"])
-    )
-    conn.commit()
 
     if user_email:
         cursor.execute("SELECT is_paid, trials_used FROM users WHERE email = ?", (user_email,))
         row = cursor.fetchone()
         if row:
             is_paid, trials_used = row[0], row[1]
-            if is_paid == 1:
+            if is_paid == 0 and trials_used >= 3:
                 conn.close()
-                return {"success": True, "trials_used": "unlimited", "analysis": analysis}
-            else:
-                trials_used += 1
-                cursor.execute("UPDATE users SET trials_used = ? WHERE email = ?", (trials_used, user_email))
-                conn.commit()
-                conn.close()
-                return {
-                    "success": True,
-                    "trials_used": f"{trials_used}/3",
-                    "analysis": analysis
-                }
+                raise HTTPException(status_code=403, detail="Free trial limit reached (3/3). Please upgrade to Pro to unlock unlimited audits.")
     else:
         trials_cookie = request.cookies.get("trials", "0")
         try:
@@ -692,6 +672,32 @@ async def audit_contract(request: Request, response: Response, contract: Contrac
             conn.close()
             raise HTTPException(status_code=403, detail="Free trial limit reached (3/3). Please log in or sign up to get more trials.")
 
+    analysis = analyze_contract_liability(contract.contract_text)
+    date_str = datetime.now().strftime("%b %d, %H:%M")
+    snippet = contract.contract_text[:60] + "..." if len(contract.contract_text) > 60 else contract.contract_text
+    identifier = user_email if user_email else request.client.host
+
+    cursor.execute(
+        "INSERT INTO history (identifier, date, snippet, full_text, risk, details, solutions) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (identifier, date_str, snippet, contract.contract_text, analysis["risk_score"], analysis["details"], analysis["solutions"])
+    )
+    conn.commit()
+
+    if user_email:
+        if is_paid == 1:
+            conn.close()
+            return {"success": True, "trials_used": "unlimited", "analysis": analysis}
+        else:
+            trials_used += 1
+            cursor.execute("UPDATE users SET trials_used = ? WHERE email = ?", (trials_used, user_email))
+            conn.commit()
+            conn.close()
+            return {
+                "success": True,
+                "trials_used": f"{trials_used}/3",
+                "analysis": analysis
+            }
+    else:
         new_trials = trials + 1
         response.set_cookie(key="trials", value=str(new_trials))
         conn.close()
