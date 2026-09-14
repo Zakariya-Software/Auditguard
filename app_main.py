@@ -110,43 +110,44 @@ async def index():
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Audit Guard AI - Premium Contract Risk Analysis</title>
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#070a14">
+    <meta name="theme-color" content="#04060b">
     <meta name="mobile-web-app-capable" content="yes">
     <style>
         * { box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background: #070a14 radial-gradient(circle at 15% 15%, rgba(16, 185, 129, 0.14) 0%, transparent 45%),
-                        radial-gradient(circle at 85% 20%, rgba(56, 189, 248, 0.16) 0%, transparent 45%),
-                        radial-gradient(circle at 50% 90%, rgba(244, 63, 94, 0.12) 0%, transparent 50%);
+            background: #04060b radial-gradient(circle at 10% 20%, rgba(244, 63, 94, 0.22) 0%, transparent 45%),
+                        radial-gradient(circle at 90% 20%, rgba(16, 185, 129, 0.22) 0%, transparent 45%),
+                        radial-gradient(circle at 50% 85%, rgba(59, 130, 246, 0.25) 0%, transparent 55%);
             color: #f8fafc;
             display: flex;
             flex-direction: column;
-            min-height: 100vh;
+            width: 100vw;
+            height: 100vh;
             margin: 0;
-            padding: 12px;
+            padding: 0;
+            overflow: hidden;
         }
         .app-container {
             width: 100%;
-            max-width: 650px;
-            margin: 0 auto;
-            flex: 1;
+            height: 100%;
             display: flex;
             flex-direction: column;
-            background: rgba(13, 17, 28, 0.88);
-            backdrop-filter: blur(20px);
-            padding: 20px;
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.7), 0 0 30px rgba(56, 189, 248, 0.1);
+            background: rgba(6, 9, 18, 0.88);
+            backdrop-filter: blur(24px);
+            padding: 16px;
+            border: none;
+            border-radius: 0;
+            box-shadow: none;
+            overflow-y: auto;
         }
         .header-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 14px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            padding-bottom: 12px;
+            margin-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 10px;
         }
         .header-left {
             display: flex;
@@ -154,10 +155,10 @@ async def index():
             gap: 12px;
         }
         .menu-btn {
-            background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(16, 185, 129, 0.2));
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: linear-gradient(135deg, rgba(244, 63, 94, 0.25), rgba(16, 185, 129, 0.25), rgba(59, 130, 246, 0.25));
+            border: 1px solid rgba(255, 255, 255, 0.2);
             color: #f8fafc;
-            font-size: 1.2rem;
+            font-size: 1.25rem;
             cursor: pointer;
             padding: 8px 12px;
             border-radius: 10px;
@@ -168,35 +169,35 @@ async def index():
         }
         .menu-btn:hover {
             transform: scale(1.05);
-            border-color: rgba(56, 189, 248, 0.5);
-            box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
+            border-color: rgba(59, 130, 246, 0.6);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
         }
         h1 {
             font-size: 1.35rem;
             font-weight: 800;
             margin: 0;
-            background: linear-gradient(135deg, #38bdf8 0%, #34d399 50%, #f43f5e 100%);
+            background: linear-gradient(135deg, #f43f5e 0%, #34d399 50%, #38bdf8 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             letter-spacing: -0.02em;
         }
         p.subtitle {
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             color: #94a3b8;
             margin-top: 0;
-            margin-bottom: 12px;
-            line-height: 1.4;
+            margin-bottom: 10px;
+            line-height: 1.35;
         }
         .sample-buttons {
             display: flex;
-            gap: 10px;
-            margin-bottom: 12px;
+            gap: 8px;
+            margin-bottom: 10px;
         }
         .sample-btn {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.12);
             color: #38bdf8;
-            padding: 6px 10px;
+            padding: 5px 10px;
             border-radius: 8px;
             font-size: 0.75rem;
             cursor: pointer;
@@ -210,15 +211,15 @@ async def index():
         textarea {
             width: 100%;
             flex: 1;
-            min-height: 280px;
-            background: #05070d;
+            min-height: 320px;
+            background: #030408;
             border: 1px solid rgba(255, 255, 255, 0.15);
             border-radius: 14px;
             color: #f8fafc;
             padding: 16px;
             font-size: 0.95rem;
             resize: vertical;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             outline: none;
             line-height: 1.5;
             transition: border-color 0.2s, box-shadow 0.2s;
@@ -232,7 +233,7 @@ async def index():
             display: flex;
             flex-direction: column;
             gap: 12px;
-            padding-bottom: 8px;
+            padding-bottom: 10px;
         }
         .action-btn {
             width: 100%;
@@ -259,11 +260,11 @@ async def index():
             box-shadow: 0 12px 25px rgba(244, 63, 94, 0.6);
         }
         .result-box {
-            background: rgba(20, 25, 40, 0.95);
+            background: rgba(15, 20, 32, 0.95);
             border: 1px solid rgba(255, 255, 255, 0.12);
             border-radius: 12px;
             padding: 16px;
-            margin-top: 16px;
+            margin-top: 14px;
             display: none;
             box-shadow: inset 0 2px 6px rgba(0,0,0,0.5);
             animation: fadeIn 0.3s ease;
@@ -279,7 +280,7 @@ async def index():
         .sidebar-overlay.active { display: block; opacity: 1; }
         .sidebar {
             position: fixed; top: 0; left: -320px; width: 320px; height: 100%;
-            background: #0b0f19; border-right: 1px solid rgba(56, 189, 248, 0.3);
+            background: #070a14; border-right: 1px solid rgba(59, 130, 246, 0.3);
             z-index: 1000; display: flex; flex-direction: column;
             transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: 10px 0 30px rgba(0,0,0,0.8); padding: 20px; overflow-y: auto;
@@ -296,7 +297,7 @@ async def index():
             border-radius: 12px; padding: 14px; margin-bottom: 20px;
         }
         .profile-section input {
-            width: 100%; padding: 10px; background: #05070d; border: 1px solid rgba(255,255,255,0.1);
+            width: 100%; padding: 10px; background: #030408; border: 1px solid rgba(255,255,255,0.1);
             border-radius: 8px; color: #fff; font-size: 0.85rem; margin-bottom: 8px; outline: none;
         }
         .profile-row { display: flex; gap: 8px; margin-top: 8px; }
@@ -383,7 +384,7 @@ async def index():
 
         function loadSample(type) {
             const ndaText = "Non-Disclosure Agreement: Recipient shall hold all confidential information in strict confidence indefinitely. Recipient accepts full liability for any accidental data leakage by third-party vendors and agrees to immediate injunctive relief and liquidated damages upon breach.";
-            const msaText = "Master Services Agreement: Vendor will process customer PII on third-party servers. Subprocessors may be engaged without prior written notice or approval, and termination may occur immediately without cause.";
+            const msaText = "Master Services Agreement: Vendor will process customer PII on third-party servers. Subsubprocess may be engaged without prior written notice or approval, and termination may occur immediately without cause.";
             document.getElementById('contractInput').value = (type === 'nda') ? ndaText : msaText;
         }
 
@@ -632,7 +633,7 @@ async def login(request: Request, email: str = Form(...), password: str = Form(.
 @app.post("/logout")
 async def logout(request: Request):
     request.session.pop("user", None)
-    return {"message": "Logged in successfully"}
+    return {"message": "Logged out successfully"}
 
 @app.post("/audit")
 async def audit_contract(request: Request, response: Response, contract: ContractRequest):
